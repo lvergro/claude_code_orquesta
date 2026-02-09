@@ -174,9 +174,11 @@ gh issue comment ISSUE --body "📊 Progress: X/Y tasks complete."
 
 1. Verify ALL tasks are `[x]` in `WT_ROOT/.claude/memory/project-state.md`
 
-2. Run final test suite:
-   - Read `WT_ROOT/.claude/stack.yml` for test command and exec_prefix
-   - Execute: `cd WT_ROOT && {exec_prefix} {test_command}`
+2. Run final validation (tests + build):
+   - Read `WT_ROOT/.claude/stack.yml` for validate command and exec_prefix
+   - Execute: `cd WT_ROOT && {exec_prefix} {stack.commands.validate}`
+   - If `validate` not defined, run `{stack.commands.test}` then `{stack.commands.build}`
+   - Build step catches SSR/runtime errors (missing providers, import errors, type mismatches)
    - **FAIL** → create fix tasks, return to Phase 4
 
 3. Push branch:

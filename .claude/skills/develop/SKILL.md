@@ -77,9 +77,14 @@ test: (none)
 
 ## PHASE 3: Finalization
 1. Verify ALL tasks `[x]` in project-state.md
-2. Update project-state.md: set `phase: completed`
-3. Use **git agent**: commit + push
-4. Use **/archive-state**: move state to archive/
+2. Run final validation: `{stack.runtime.exec_prefix} {stack.commands.validate}`
+   - If `validate` is defined in stack.yml, run it (typically: tests + build)
+   - If not defined, run `{stack.commands.test}` then `{stack.commands.build}`
+   - Build step catches SSR/runtime errors (missing providers, import errors, type mismatches)
+   - **FAIL** → create fix tasks, return to Phase 2
+3. Update project-state.md: set `phase: completed`
+4. Use **git agent**: commit + push
+5. Use **/archive-state**: move state to archive/
 
 ## Critical Rules
 - **NEVER skip writing to project-state.md.** Every task state change MUST be persisted.
