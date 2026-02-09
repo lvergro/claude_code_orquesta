@@ -11,30 +11,80 @@ user-invocable: true
 
 ## PHASE 0: Triage
 1. Read `.claude/memory/project-state.md`
-   - Has pending [ ] tasks? → RESUME from first pending task
-   - Clean state? → Continue to Phase 1
+   - Has pending `[ ]` tasks with `skill: /develop`? → RESUME from first pending task (skip to Phase 2)
+   - Clean state or `phase: IDLE`? → Continue to Phase 1
 2. Use **planner agent** to analyze request
    - Needs architecture changes? → Include Phase 1
    - No arch changes? → Skip to Phase 2
    - Arch-only request? → Phase 1 only, then finalize
 
-## PHASE 1: Architecture (conditional)
-- Read `.claude/memory/decisions/DEC-*.md` to avoid re-litigating past decisions
-- Use **planner agent** (design mode) → update architecture.md
-- Record new architectural decisions as `DEC-####.md` in `memory/decisions/`
-- Output: "✅ Architecture updated."
+## PHASE 1: Architecture + Planning
+1. Read `.claude/memory/decisions/DEC-*.md` to avoid re-litigating past decisions
+2. If architecture changes needed:
+   - Use **planner agent** (design mode) → update architecture.md
+   - Record new decisions as `DEC-####.md` in `memory/decisions/`
+3. **MANDATORY — Write plan to project-state.md** using this exact format:
+
+```markdown
+# Project State
+updated: [YYYY-MM-DD]
+skill: /develop
+phase: execution
+
+## Active Tasks
+
+### Wave 1: [Wave Name]
+- [ ] Task description
+- [ ] Task description
+
+### Wave 2: [Wave Name]
+- [ ] Task description
+- [ ] Task description
+
+## Current Focus
+task: (starting)
+file: (none)
+test: (none)
+
+## Blockers
+(none)
+
+## Recent Decisions (last 5)
+(none)
+```
+
+4. Output the plan summary. Wait for user approval before proceeding to Phase 2.
 
 ## PHASE 2: Execution Loop
-For each pending task [ ] in project-state.md:
-1. Use **builder agent**: implement + test
-2. PASS → mark [x] in project-state.md, print "✅ [N]"
-3. FAIL → builder retries (max 2). 3rd fail → STOP, ask user.
 
-### Context Management (every 3 completed tasks)
-- Use **/summarize-context** to compress state to project-state.md
-- Print: "Context compressed. Continuing task N."
+**BEFORE each task:**
+- Update `Current Focus` in project-state.md with the task being worked on
+
+**For each pending task `[ ]` in project-state.md:**
+1. Use **builder agent**: implement + test
+2. **PASS** → IMMEDIATELY edit project-state.md:
+   - Change `- [ ] Task` to `- [x] Task`
+   - Update `Current Focus` to next task
+   - Print: `✅ [N/total] Task description`
+3. **FAIL** → builder retries (max 2). 3rd fail → STOP, ask user.
+
+**After each completed wave:**
+- Update `phase` field if moving to next wave
+
+**Every 3 completed tasks:**
+- Use **/summarize-context** to compress state
+- Print: `Context compressed. Continuing task N.`
 
 ## PHASE 3: Finalization
-- Verify ALL tasks [x] in project-state.md
-- Use **git agent**: commit + push
-- Use **/archive-state**: move state to archive/
+1. Verify ALL tasks `[x]` in project-state.md
+2. Update project-state.md: set `phase: completed`
+3. Use **git agent**: commit + push
+4. Use **/archive-state**: move state to archive/
+
+## Critical Rules
+- **NEVER skip writing to project-state.md.** Every task state change MUST be persisted.
+- **project-state.md is the source of truth.** If the session crashes, the next `/develop` reads it and resumes.
+- **Mark tasks [x] one at a time**, not in batch. Each mark = one Edit to the file.
+- **80-line cap**: If project-state.md exceeds 80 lines, archive completed waves immediately.
+- **NEVER create documentation files** (docs/*.md, README, CHANGELOG) unless explicitly requested by the user. Only write to `.claude/memory/` files.
+- **Do ONLY what the task says.** No extra features, no refactors, no "while I'm here" improvements.

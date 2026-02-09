@@ -1,6 +1,6 @@
 # Claude Code Multi-Agent Framework
 
-> **This is a proposal, not a prescription.** This framework represents one approach to orchestrating [Claude Code](https://docs.anthropic.com/en/docs/claude-code) as a multi-agent development team. It is not the definitive way to work with Claude Code — it's a starting point you can adapt, modify, extend, or partially adopt to fit your workflow. Take what works, change what doesn't.
+> **Note:** This is an orchestration method I have been testing in a few projects. Take what works, change what doesn't.
 
 A multi-agent orchestration framework that turns Claude Code into a development team with specialized roles, persistent memory, and automated workflows.
 
@@ -9,15 +9,6 @@ It uses **native dispatch** — agents have `description` fields in their YAML f
 **[Leer en Espanol](README_ES.md)**
 
 ---
-
-## Why This Exists
-
-Claude Code is powerful out of the box, but for complex projects you often want:
-
-- **Role separation** — a planner that doesn't write code, a builder that doesn't touch architecture decisions
-- **Persistent memory** — context that survives across sessions (architecture docs, task state, decisions)
-- **Structured workflows** — repeatable pipelines for features, quick fixes, research, audits
-- **Traceability** — from GitHub Issue to spec to branch to commits to PR, all connected
 
 This framework provides a file-based convention that gives Claude Code these capabilities without external tooling. It's just markdown files and YAML — Claude reads them and follows the instructions.
 
@@ -37,65 +28,6 @@ The framework ships in two variants. Choose the one that fits your workflow:
 | **Best for** | Solo work, simple projects | Teams, issue-driven projects, multiple features |
 
 You can start with Linear and switch to Feature-driven later — the Feature-driven variant is a superset (same agents + skills + one extra skill).
-
-### Flow Visualization
-
-**Linear (`/develop`)** — Sequential cycle for individual work:
-
-```mermaid
-flowchart LR
-    A[Request] --> B{Triage}
-    B -->|Clean state| C["Planner: Spec + Tasks"]
-    B -->|Pending tasks| D
-    C --> D[Execution Loop]
-    D --> E{"Builder: Implement + Test"}
-    E -->|PASS| F["Mark task [x]"]
-    F -->|Every 3 tasks| G["/summarize-context"]
-    G --> D
-    F -->|Tasks remaining| D
-    E -->|FAIL x3| H["STOP: Ask for help"]
-    F -->|All done| I["Git Agent: Commit"]
-    I --> J["/archive-state"]
-```
-
-**Feature-driven (`/feature`)** — Issue-based cycle with worktrees for teams:
-
-```mermaid
-flowchart LR
-    A["#42 or free text"] --> B{"gh auth status"}
-    B -->|OK| C{"Worktree exists?"}
-    C -->|Yes| D[RESUME]
-    C -->|No| E["Intake: gh issue create/view"]
-    E --> F["Planner: Spec → comment on issue"]
-    F --> G["git worktree add"]
-    G --> H["Execution Loop in WT_ROOT"]
-    D --> H
-    H --> I{"Builder: Implement + Test"}
-    I -->|PASS| J["Mark task [x]"]
-    J -->|Every 3 tasks| K["/summarize-context"]
-    K --> H
-    J -->|Wave complete| L["git commit in worktree"]
-    L -->|Waves remaining| H
-    I -->|FAIL x3| M["Post blocker on issue, STOP"]
-    L -->|All done| N["Final test + git push"]
-    N --> O["gh pr create"]
-    O --> P["Comment: PR URL on issue"]
-```
-
-### When to Choose Each
-
-| Criteria | Linear | Feature-driven |
-|----------|--------|----------------|
-| Solo work, one change at a time | Ideal | Overkill |
-| Team, multiple features in parallel | Insufficient | Ideal |
-| Project without GitHub Issues | Only option | N/A |
-| Project with issues + PRs as workflow | Possible but manual | Automated |
-| Need issue → PR traceability | Not included | Built-in |
-| Simple project (< 10 files) | Ideal | Overkill |
-| Large project with protected areas | Works | Works + isolation |
-| Need to resume after interruption | `/develop` resumes | `/feature #N` resumes with worktree intact |
-
-**Rule of thumb**: If your workflow already uses GitHub Issues and Pull Requests, choose Feature-driven. If you work solo and commit straight to main, choose Linear.
 
 ---
 
@@ -199,6 +131,37 @@ framework:
   orm: "Prisma"
 ```
 
+Other stack examples:
+
+```yaml
+# Python + FastAPI
+name: python-docker
+runtime:
+  exec_prefix: "docker compose exec api"
+commands:
+  test: "pytest"
+  lint: "ruff check {path}"
+  type_check: "mypy {path}"
+paths:
+  source: "app/"
+  tests: "tests/"
+conventions:
+  test_file_pattern: "test_{name}.py"
+
+# Go (no Docker)
+name: go-local
+runtime:
+  exec_prefix: ""
+commands:
+  test: "go test ./..."
+  lint: "golangci-lint run"
+paths:
+  source: "internal/"
+  tests: "internal/"
+conventions:
+  test_file_pattern: "{name}_test.go"
+```
+
 ### Step 4: Document your architecture
 
 Edit `.claude/memory/architecture.md` — this is the source of truth for your system design:
@@ -222,7 +185,6 @@ claude
 /research Compare Redis vs Memcached for caching
 /feature #42                              # (Feature-driven only)
 /feature Add real-time alerts system       # (Feature-driven only)
-/feature #42                          # Resume if interrupted
 ```
 
 ---
@@ -321,7 +283,6 @@ PHASE 1: Architecture (conditional)
   Read decisions/ to avoid re-litigating past decisions
   Planner agent updates architecture.md
   Record new decisions as DEC-####.md
-  Output: "✅ Architecture updated."
 
 PHASE 2: Execution Loop
   For each task [ ] in project-state.md:
@@ -382,7 +343,7 @@ PHASE 4: Execution (inside the worktree)
   Post progress to issue
 
 PHASE 5: Integration
-  Test suite final → git push → gh pr create
+  Final test suite → git push → gh pr create
   Post PR URL to issue
 
 PHASE 6: Cleanup
@@ -423,222 +384,6 @@ Open multiple Claude Code terminals to execute tasks from the same wave in paral
 ```
 
 Each session claims a different task via coordination in `locks.md`. Locks older than 30 minutes are considered expired and released automatically.
-
----
-
-## Work Organization (Waves)
-
-**Waves** are the fundamental unit of work organization in the framework. A wave is a logical group of coherent tasks that are executed together, validated together, and committed together.
-
-### What is a wave
-
-```
-Wave 1: Database
-  [ ] Create migration with new tables
-  [ ] Add columns to existing tables
-  [ ] Update schema.sql
-
-Wave 2: Backend
-  [ ] Create server actions
-  [ ] Update existing queries
-  [ ] Add validations
-
-Wave 3: UI
-  [ ] Create form components
-  [ ] Update existing pages
-  [ ] Add visual feedback
-```
-
-### Why waves instead of a flat list
-
-- **Context focus**: The builder agent works in one domain at a time (DB, then backend, then UI), reducing errors from context switching
-- **Memory checkpoints**: `/summarize-context` runs every 3 tasks, and waves provide natural cut-off points
-- **Atomic commits**: Each completed wave = one meaningful commit (`feat(auth): wave 1 — database schema`)
-- **Parallelization**: With `/parallel`, multiple sessions pick tasks from the same wave without conflicts
-
-### Wave lifecycle
-
-```
-Planner defines waves in project-state.md
-        ↓
-Builder executes task [ ] → test → PASS → mark [x]
-        ↓ (every 3 tasks)
-/summarize-context compresses state
-        ↓ (wave complete)
-Git agent: atomic commit for the wave
-        ↓ (next wave)
-Repeat until all [x]
-        ↓
-/archive-state → reset
-```
-
-### Waves in each variant
-
-| | Linear (`/develop`) | Feature-driven (`/feature`) |
-|---|---|---|
-| Who defines waves | Planner agent in project-state.md | Planner agent, posted as comment on issue |
-| Commit per wave | Yes, at the end of each wave | Yes, inside the worktree |
-| Visible progress | In local project-state.md | In project-state.md + comments on GitHub Issue |
-| Parallelizable | Yes, via `/parallel` | Yes, via `/parallel` inside the worktree |
-
----
-
-## Automated Testing Strategy
-
-The framework runs tests at multiple levels, configured in `stack.yml`. You don't need to invoke tests manually — they run automatically at the right moments.
-
-### Testing levels
-
-```
-Level 3: System Validations ─────────────────────────────────
-         /validate-invariants (critical rules from project.yml)
-         /audit (security, tenant isolation, auth flows)
-         /analyze-architecture (drift vs architecture.md)
-
-Level 2: Integration Tests ──────────────────────────────────
-         End of wave or pre-commit
-         Command: {exec_prefix} {commands.test}
-         Run by: /prepare-commit, /feature Phase 5
-
-Level 1: Atomic Tests (Unit) ────────────────────────────────
-         After each individual task
-         Command: {exec_prefix} {commands.test_single}
-         Run by: builder agent
-```
-
-### When each level runs
-
-| Moment | Level 1 (Unit) | Level 2 (Integration) | Level 3 (System) |
-|--------|----------------|-----------------------|-------------------|
-| Builder completes a task | **Yes** — test_single | No | No |
-| Wave complete | No | **Yes** — test | No |
-| Pre-commit (`/prepare-commit`) | No | **Yes** — test | **Yes** — /validate-invariants |
-| Pre-PR (`/feature` Phase 5) | No | **Yes** — full test suite | No |
-| On demand | `/write-tests` generates | Manual | `/audit`, `/analyze-architecture` |
-
-### Configuration in stack.yml
-
-```yaml
-commands:
-  test: "npx vitest run"            # Level 2: full suite
-  test_single: "npx vitest run {file}"  # Level 1: individual file
-  lint: "npx eslint {path}"         # Code quality
-  type_check: "npx tsc --noEmit"    # Type checking
-```
-
-### Failure behavior
-
-| Level | Failure | Action |
-|-------|---------|--------|
-| Level 1 | Unit test fails | Builder retries (max 2). 3rd failure → STOP |
-| Level 2 | Integration test fails | `/prepare-commit` rejects. `/feature` returns to Phase 4 with fix tasks |
-| Level 3 | Invariant violated | `/validate-invariants` emits critical FAIL. Change rejected |
-
----
-
-## Daily Operation Guide
-
-### Path A: Sequential Work (Linear)
-
-**Start of day — resume paused work:**
-
-```bash
-claude
-/develop
-# If pending tasks exist in project-state.md → resumes automatically
-# If clean → describe the new task
-```
-
-**Quick change without planning:**
-
-```bash
-/quick Change the login button color
-# Gate: checks it doesn't touch protected areas
-# If it touches migrations/ or middleware → redirects to /develop
-```
-
-**Research before deciding:**
-
-```bash
-/research Compare Stripe vs Square for payments
-# Planner investigates, writes to research.md, gives recommendation
-```
-
-**Typical flow for a complete feature:**
-
-```
-1. /develop Implement notification system
-2. Planner creates spec with waves in project-state.md
-3. Builder executes Wave 1 (DB) → test → commit
-4. Builder executes Wave 2 (Backend) → test → commit
-5. Builder executes Wave 3 (UI) → test → commit
-6. /prepare-commit → final validation
-7. Git agent: push
-8. /archive-state → clean state
-```
-
-**If the session is interrupted:**
-
-```bash
-# Next session:
-/develop
-# Reads project-state.md → finds pending [ ] tasks → RESUME
-```
-
-### Path B: Issue Management (Feature-driven)
-
-**Implement an existing issue:**
-
-```bash
-/feature #42
-# Reads issue → generates spec → creates worktree → implements → PR
-```
-
-**Create issue from description:**
-
-```bash
-/feature Add email alerts system
-# Creates issue on GitHub → generates spec → creates worktree → implements → PR
-```
-
-**Work on multiple features in parallel:**
-
-```
-Terminal 1: /feature #42    → worktree feat/42-add-alerts
-Terminal 2: /feature #57    → worktree feat/57-fix-auth
-# Each feature in its own worktree, no conflicts
-```
-
-**Resume an interrupted feature:**
-
-```bash
-/feature #42
-# Detects existing worktree → reads worktree's project-state.md → RESUME
-# The worktree preserves all state: code, commits, tests
-```
-
-**Complete lifecycle of an issue:**
-
-```
-1. /feature #42
-2. gh reads issue → Planner generates spec → comment on issue
-3. git worktree add → branch feat/42-slug
-4. Builder executes waves inside the worktree
-5. Each wave → commit → progress comment on issue
-6. Final test suite → git push → gh pr create
-7. Comment on issue: "PR created: URL"
-8. State archived, worktree remains for post-review fixes
-```
-
-**Switch between worktrees without losing context:**
-
-```bash
-# Each feature's state lives in its worktree:
-# .worktrees/feat/42-add-alerts/.claude/memory/project-state.md
-# .worktrees/feat/57-fix-auth/.claude/memory/project-state.md
-
-# Each /feature #N reads ITS project-state.md, not the main repo's
-```
 
 ---
 
@@ -705,6 +450,7 @@ Role instructions here.
 ```
 
 ### Add a skill
+
 Create `.claude/skills/my-skill/SKILL.md`:
 
 ```yaml
