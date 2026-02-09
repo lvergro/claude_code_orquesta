@@ -1,0 +1,56 @@
+# .claude/project.yml — Project Identity
+# This file defines WHAT the project is. Stack-agnostic.
+# Change THIS file when adapting the framework to a different project.
+
+name: MyProject                        # <-- Your project name
+description: Brief project description # <-- What does it do?
+
+domain:
+  language: en                         # Primary business language (en, es, pt, etc.)
+  entities: []                         # <-- List your domain entities
+  # Example:
+  # entities:
+  #   - organization (tenant)
+  #   - user
+  #   - order
+  #   - product
+
+# Multi-tenancy configuration (remove or set enabled: false if single-tenant)
+tenant:
+  enabled: false
+  # column: tenant_id                  # Column name for tenant isolation
+  # table: organizations               # Primary tenant table
+  # membership_table: org_memberships  # User-tenant relationship table
+  # isolation: rls                     # Isolation strategy (rls, schema, database)
+  # global_role: super_admin           # Role that bypasses tenant isolation
+
+# Rules that must NEVER be violated. Agents stop and report if any breaks.
+invariants:
+  - name: Security
+    rule: No hardcoded secrets. Auth tokens are the source of truth.
+    severity: critical
+  # Add your project-specific invariants:
+  # - name: Tenant Isolation
+  #   rule: All DB queries filter by tenant_id. No cross-tenant data leaks.
+  #   severity: critical
+  # - name: Atomic Transactions
+  #   rule: Payment and inventory flows MUST be atomic. No partial success.
+  #   severity: critical
+
+# Flows that require special care (transactions, security-critical, etc.)
+critical_flows: []
+  # Example:
+  # - name: Payment Processing
+  #   description: Validate payment → charge card → update balance → send receipt
+  #   tables: [payments, balances, receipts]
+  #   type: transaction
+
+# Areas that /quick will reject — forces you to use /develop instead
+gate_protected_areas:
+  - pattern: "migrations/"
+    reason: Schema changes require full /develop pipeline
+  # Add patterns for sensitive areas:
+  # - pattern: "auth/**"
+  #   reason: Authentication logic
+  # - pattern: "middleware*"
+  #   reason: Request routing and security

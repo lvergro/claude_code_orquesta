@@ -1,0 +1,68 @@
+# .claude/stack.yml — Stack Profile
+# Change THIS file to adapt the entire workflow to a different stack.
+# All agents and skills reference {stack.*} instead of hardcoded commands.
+
+name: my-stack                                # <-- Name your stack profile
+
+runtime:
+  exec_prefix: ""                             # Prefix for ALL runtime commands
+  # exec_prefix_db: ""                        # Prefix for DB-specific commands (optional)
+  # note: ""                                  # Notes about runtime constraints
+
+  # Docker example:
+  # exec_prefix: "docker compose exec web"
+  # exec_prefix_db: "docker compose exec db"
+  # note: "Host has NO local runtime. ALWAYS use exec_prefix."
+
+commands:
+  install: ""                                 # <-- Dependency installation
+  test: ""                                    # <-- Run all tests
+  test_single: ""                             # <-- Run single test file ({file} placeholder)
+  lint: ""                                    # <-- Lint code ({path} placeholder)
+  type_check: ""                              # <-- Type checking
+  build: ""                                   # <-- Build for production
+  dev: ""                                     # <-- Start dev server
+
+  # Node.js example:
+  # install: "npm install"
+  # test: "npm run test"
+  # test_single: "npx vitest run {file}"
+  # lint: "npx eslint {path}"
+  # type_check: "npx tsc --noEmit"
+  # build: "npm run build"
+  # dev: "npm run dev"
+
+  # Python example:
+  # install: "pip install -r requirements.txt"
+  # test: "pytest"
+  # test_single: "pytest {file} -v"
+  # lint: "ruff check {path}"
+  # type_check: "mypy {path}"
+  # build: "echo 'no build step'"
+  # dev: "uvicorn app.main:app --reload"
+
+paths:
+  source: "src/"                              # <-- Main source directory
+  tests: "tests/"                             # <-- Test directory
+  config: "package.json"                      # <-- Main config file
+
+  # Additional paths (add as needed):
+  # app: "app/"
+  # migrations: "migrations/"
+  # schema: "schema.sql"
+
+conventions:
+  test_file_pattern: "{name}.test.ts"         # <-- How test files are named
+  # module_structure: "app/{route}/page.tsx"   # <-- Module layout convention
+  # utils: "utils/"                            # <-- Shared utilities location
+
+  # Python conventions:
+  # test_file_pattern: "test_{name}.py"
+  # module_structure: "app/{module}/"
+
+# Optional: Framework-specific metadata
+# framework:
+#   name: "Next.js 14+ (App Router)"
+#   components: "Server Components by default"
+#   backend: "Supabase (PostgreSQL + Auth + RLS)"
+#   orm: "Prisma"
