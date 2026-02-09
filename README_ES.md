@@ -45,40 +45,40 @@ Puedes empezar con Linear y cambiar a Feature-driven despues — la variante Fea
 ```mermaid
 flowchart LR
     A[Request] --> B{Triage}
-    B -->|State limpio| C[Planner: Spec + Tasks]
+    B -->|State limpio| C["Planner: Spec + Tasks"]
     B -->|Tasks pendientes| D
     C --> D[Execution Loop]
-    D --> E{Builder: Implementa + Test}
-    E -->|PASS| F[Marca tarea x]
-    F -->|Cada 3 tareas| G[/summarize-context]
+    D --> E{"Builder: Implementa + Test"}
+    E -->|PASS| F["Marca tarea [x]"]
+    F -->|Cada 3 tareas| G["/summarize-context"]
     G --> D
     F -->|Quedan tareas| D
-    E -->|FAIL x3| H[STOP: Pedir ayuda]
-    F -->|Todas x| I[Git Agent: Commit]
-    I --> J[/archive-state]
+    E -->|FAIL x3| H["STOP: Pedir ayuda"]
+    F -->|Todas listas| I["Git Agent: Commit"]
+    I --> J["/archive-state"]
 ```
 
 **Feature-driven (`/feature`)** — Ciclo basado en issues y worktrees para equipos:
 
 ```mermaid
 flowchart LR
-    A["#42 o texto libre"] --> B{gh auth status}
-    B -->|OK| C{Worktree existe?}
+    A["#42 o texto libre"] --> B{"gh auth status"}
+    B -->|OK| C{"Worktree existe?"}
     C -->|Si| D[RESUME]
-    C -->|No| E[Intake: gh issue create/view]
-    E --> F[Planner: Spec → comment en issue]
-    F --> G[git worktree add]
-    G --> H[Execution Loop en WT_ROOT]
+    C -->|No| E["Intake: gh issue create/view"]
+    E --> F["Planner: Spec → comment en issue"]
+    F --> G["git worktree add"]
+    G --> H["Execution Loop en WT_ROOT"]
     D --> H
-    H --> I{Builder: Implementa + Test}
-    I -->|PASS| J[Marca tarea x]
-    J -->|Cada 3 tareas| K[/summarize-context]
+    H --> I{"Builder: Implementa + Test"}
+    I -->|PASS| J["Marca tarea [x]"]
+    J -->|Cada 3 tareas| K["/summarize-context"]
     K --> H
-    J -->|Fin de wave| L[git commit en worktree]
+    J -->|Fin de wave| L["git commit en worktree"]
     L -->|Quedan waves| H
-    I -->|FAIL x3| M[Post blocker en issue, STOP]
-    L -->|Todas x| N[Test final + git push]
-    N --> O[gh pr create]
+    I -->|FAIL x3| M["Post blocker en issue, STOP"]
+    L -->|Todas listas| N["Test final + git push"]
+    N --> O["gh pr create"]
     O --> P["Comment: PR URL en issue"]
 ```
 

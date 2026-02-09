@@ -45,40 +45,40 @@ You can start with Linear and switch to Feature-driven later — the Feature-dri
 ```mermaid
 flowchart LR
     A[Request] --> B{Triage}
-    B -->|Clean state| C[Planner: Spec + Tasks]
+    B -->|Clean state| C["Planner: Spec + Tasks"]
     B -->|Pending tasks| D
     C --> D[Execution Loop]
-    D --> E{Builder: Implement + Test}
-    E -->|PASS| F[Mark task x]
-    F -->|Every 3 tasks| G[/summarize-context]
+    D --> E{"Builder: Implement + Test"}
+    E -->|PASS| F["Mark task [x]"]
+    F -->|Every 3 tasks| G["/summarize-context"]
     G --> D
     F -->|Tasks remaining| D
-    E -->|FAIL x3| H[STOP: Ask for help]
-    F -->|All x| I[Git Agent: Commit]
-    I --> J[/archive-state]
+    E -->|FAIL x3| H["STOP: Ask for help"]
+    F -->|All done| I["Git Agent: Commit"]
+    I --> J["/archive-state"]
 ```
 
 **Feature-driven (`/feature`)** — Issue-based cycle with worktrees for teams:
 
 ```mermaid
 flowchart LR
-    A["#42 or free text"] --> B{gh auth status}
-    B -->|OK| C{Worktree exists?}
+    A["#42 or free text"] --> B{"gh auth status"}
+    B -->|OK| C{"Worktree exists?"}
     C -->|Yes| D[RESUME]
-    C -->|No| E[Intake: gh issue create/view]
-    E --> F[Planner: Spec → comment on issue]
-    F --> G[git worktree add]
-    G --> H[Execution Loop in WT_ROOT]
+    C -->|No| E["Intake: gh issue create/view"]
+    E --> F["Planner: Spec → comment on issue"]
+    F --> G["git worktree add"]
+    G --> H["Execution Loop in WT_ROOT"]
     D --> H
-    H --> I{Builder: Implement + Test}
-    I -->|PASS| J[Mark task x]
-    J -->|Every 3 tasks| K[/summarize-context]
+    H --> I{"Builder: Implement + Test"}
+    I -->|PASS| J["Mark task [x]"]
+    J -->|Every 3 tasks| K["/summarize-context"]
     K --> H
-    J -->|Wave complete| L[git commit in worktree]
+    J -->|Wave complete| L["git commit in worktree"]
     L -->|Waves remaining| H
-    I -->|FAIL x3| M[Post blocker on issue, STOP]
-    L -->|All x| N[Final test + git push]
-    N --> O[gh pr create]
+    I -->|FAIL x3| M["Post blocker on issue, STOP"]
+    L -->|All done| N["Final test + git push"]
+    N --> O["gh pr create"]
     O --> P["Comment: PR URL on issue"]
 ```
 
