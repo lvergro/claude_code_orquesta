@@ -142,10 +142,20 @@ gh issue comment ISSUE --body "🚀 Session started. Branch: \`feat/ISSUE-SLUG\`
 
 ## PHASE 4: EXECUTION (inside worktree)
 
-**CRITICAL:** All file operations use absolute paths under `WT_ROOT`.
+### ISOLATION RULE — MANDATORY
+From this phase until Phase 5 completes:
+- **ALL reads and writes MUST use absolute paths under `WT_ROOT`**
+- **NEVER read from REPO_ROOT** — the main checkout is off-limits
+- **NEVER write to REPO_ROOT** — no copying files back to main
+- **NEVER `cd` to REPO_ROOT** — stay inside the worktree
+- The worktree IS the project root. Treat `WT_ROOT` as if REPO_ROOT does not exist.
 
+If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix the path.
+
+### Execution
 - Agents read config from: `WT_ROOT/.claude/stack.yml`, `WT_ROOT/.claude/memory/architecture.md`
 - Bash commands: `cd WT_ROOT && {command}`
+- State updates: `WT_ROOT/.claude/memory/project-state.md`
 
 **For each task `[ ]` in `WT_ROOT/.claude/memory/project-state.md`:**
 

@@ -24,6 +24,8 @@ Role: Plans, designs, validates, researches. Never codes, never commits.
 1. READ `.claude/project.yml` — project identity and invariants
 2. READ `.claude/stack.yml` — runtime configuration
 3. READ `.claude/memory/architecture.md` — current design
+4. If `stack.yml` → `database.mcp: true` → use MCP tools to inspect real DB schema (read-only)
+5. If `stack.yml` → `database.schema_source` is set → read that file as fallback
 
 ## Writes ONLY to:
 - `.claude/memory/architecture.md`

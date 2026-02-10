@@ -1,16 +1,21 @@
-# Claude Code Multi-Agent Framework
+# <img src="assets/logo.png" alt="Orquesta Logo" width="50" height="50" align="center"/> Orquesta
 
 > **Nota:** Esta es una forma de orquestación que he estado probando en algunos proyectos. Toma lo que te sirva, cambia lo que no.
 
-Un framework de orquestacion multi-agente que convierte a Claude Code en un equipo de desarrollo con roles especializados, memoria persistente y flujos automatizados.
+**Orquesta** es un framework de orquestación multi-agente que convierte a Claude Code en un equipo de desarrollo con roles especializados, memoria persistente y flujos automatizados.
 
-Usa **dispatch nativo** — los agents tienen `description` en su frontmatter YAML y Claude los invoca automaticamente. Las skills usan el formato estandar `name/SKILL.md` con `user-invocable: true`.
+Usa **dispatch nativo** — los agents tienen `description` en su frontmatter YAML y Claude los invoca automáticamente. Las skills usan el formato estándar `name/SKILL.md` con `user-invocable: true`.
 
 **[Read in English](README.md)**
 
+## 🤝 Herramientas Recomendadas
+
+Recomendamos usar **[Claude Code Templates](https://github.com/davila7/claude-code-templates)** creado por **davila7** junto con Orquesta.
+Específicamente, el **Analytics Dashboard** (`npx claude-code-templates --analytics`) ofrece una visualización en tiempo real del proceso de pensamiento de tus agentes de Orquesta y el uso de tokens.
+
 ---
 
-Este framework provee una convencion basada en archivos que le da estas capacidades a Claude Code sin herramientas externas. Son solo archivos markdown y YAML — Claude los lee y sigue las instrucciones.
+Este framework provee una convención basada en archivos que le da estas capacidades a Claude Code sin herramientas externas. Son solo archivos markdown y YAML — Claude los lee y sigue las instrucciones.
 
 ---
 
@@ -114,6 +119,7 @@ commands:
   type_check: "npx tsc --noEmit"
   build: "npm run build"
   dev: "npm run dev"
+  validate: "npx vitest run && npm run build"  # tests + build (detecta errores de runtime)
 
 paths:
   source: "src/"
@@ -292,6 +298,7 @@ PHASE 2: Execution Loop
   Cada 3 tareas → /summarize-context
 
 PHASE 3: Finalization
+  Ejecutar validate (tests + build) → detecta errores de runtime
   Git agent commit + push
   /archive-state → resetea project-state.md
 ```
@@ -337,13 +344,15 @@ PHASE 3: Worktree Setup
   git worktree add WT_ROOT -b feat/ISSUE-SLUG origin/main
   Copiar state al worktree
 
-PHASE 4: Execution (dentro del worktree)
+PHASE 4: Execution (dentro del worktree — aislamiento estricto)
+  NUNCA leer/escribir en REPO_ROOT — el worktree es la raiz del proyecto
   Builder agent implementa + testea cada task
   Commits por wave dentro del worktree
   Post progreso al issue
 
 PHASE 5: Integration
-  Test suite final → git push → gh pr create
+  Ejecutar validate (tests + build) → detecta errores de runtime
+  git push → gh pr create
   Post PR URL al issue
 
 PHASE 6: Cleanup
@@ -467,6 +476,22 @@ user-invocable: true
 1. Paso uno
 2. Paso dos
 ```
+
+### Conectar un MCP de base de datos
+
+Si tu proyecto usa una base de datos, puedes configurar un servidor [Model Context Protocol](https://modelcontextprotocol.io/) para que el planner agent inspeccione el schema real en vez de depender de documentacion que puede estar desactualizada.
+
+En `stack.yml`:
+
+```yaml
+database:
+  type: "postgresql"              # postgresql, mysql, sqlite, mongodb
+  schema_source: "schema.sql"     # Archivo fallback si no hay MCP
+  mcp: true                       # true si hay un MCP de DB configurado
+  read_only: true                 # El MCP NUNCA debe escribir en la base de datos
+```
+
+Cuando `database.mcp: true`, el planner usa herramientas MCP para consultar el schema en vivo. Cuando es `false` o no existe, lee el archivo `schema_source` como fallback.
 
 ### Agregar permisos de herramientas
 

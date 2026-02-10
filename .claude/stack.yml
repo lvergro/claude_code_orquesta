@@ -22,6 +22,8 @@ commands:
   type_check: ""                              # <-- Type checking
   build: ""                                   # <-- Build for production
   dev: ""                                     # <-- Start dev server
+  # validate: ""                              # <-- Run tests + build (catches runtime errors)
+  # generate_tests: ""                        # <-- Generate test stubs for a file ({file} placeholder)
 
   # Node.js example:
   # install: "npm install"
@@ -66,3 +68,12 @@ conventions:
 #   components: "Server Components by default"
 #   backend: "Supabase (PostgreSQL + Auth + RLS)"
 #   orm: "Prisma"
+
+# Optional: Database inspection
+# If a database MCP is configured, the planner agent can query the real schema
+# instead of relying on documentation that may be outdated.
+# database:
+#   type: "postgresql"                        # postgresql, mysql, sqlite, mongodb
+#   schema_source: "schema.sql"               # File to read if no MCP available
+#   mcp: true                                 # Set to true if DB MCP is configured
+#   read_only: true                           # MCP should NEVER write to the database

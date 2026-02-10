@@ -1,12 +1,17 @@
-# Claude Code Multi-Agent Framework
+# <img src="assets/logo.png" alt="Orquesta Logo" width="50" height="50" align="center"/> Orquesta
 
 > **Note:** This is an orchestration method I have been testing in a few projects. Take what works, change what doesn't.
 
-A multi-agent orchestration framework that turns Claude Code into a development team with specialized roles, persistent memory, and automated workflows.
+**Orquesta** is a multi-agent framework that turns Claude Code into a development team with specialized roles, persistent memory, and automated workflows.
 
 It uses **native dispatch** — agents have `description` fields in their YAML frontmatter and Claude invokes them automatically. Skills use the standard `name/SKILL.md` format with `user-invocable: true`.
 
-**[Leer en Espanol](README_ES.md)**
+**[Leer en Español](README_ES.md)**
+
+## 🤝 Recommended Tools
+
+We recommend using **[Claude Code Templates](https://github.com/davila7/claude-code-templates)** by **davila7** alongside Orquesta.
+Specifically, the **Analytics Dashboard** (`npx claude-code-templates --analytics`) provides real-time visualization of your Orquesta agents' thought process and token usage.
 
 ---
 
@@ -114,6 +119,7 @@ commands:
   type_check: "npx tsc --noEmit"
   build: "npm run build"
   dev: "npm run dev"
+  validate: "npx vitest run && npm run build"  # tests + build (catches runtime errors)
 
 paths:
   source: "src/"
@@ -292,6 +298,7 @@ PHASE 2: Execution Loop
   Every 3 tasks → /summarize-context
 
 PHASE 3: Finalization
+  Run validate (tests + build) → catches runtime errors
   Git agent commit + push
   /archive-state → reset project-state.md
 ```
@@ -337,13 +344,15 @@ PHASE 3: Worktree Setup
   git worktree add WT_ROOT -b feat/ISSUE-SLUG origin/main
   Copy state to worktree
 
-PHASE 4: Execution (inside the worktree)
+PHASE 4: Execution (inside the worktree — strict isolation)
+  NEVER read/write to REPO_ROOT — worktree is the project root
   Builder agent implements + tests each task
   Commits per wave inside the worktree
   Post progress to issue
 
 PHASE 5: Integration
-  Final test suite → git push → gh pr create
+  Run validate (tests + build) → catches runtime errors
+  git push → gh pr create
   Post PR URL to issue
 
 PHASE 6: Cleanup
@@ -467,6 +476,22 @@ user-invocable: true
 1. Step one
 2. Step two
 ```
+
+### Connect a database MCP
+
+If your project uses a database, you can configure a [Model Context Protocol](https://modelcontextprotocol.io/) server so the planner agent can inspect the real schema instead of relying on documentation.
+
+In `stack.yml`:
+
+```yaml
+database:
+  type: "postgresql"              # postgresql, mysql, sqlite, mongodb
+  schema_source: "schema.sql"     # Fallback file if no MCP available
+  mcp: true                       # Set to true if DB MCP is configured
+  read_only: true                 # MCP should NEVER write to the database
+```
+
+When `database.mcp: true`, the planner will use MCP tools to query the live schema. When `false` or absent, it falls back to reading the `schema_source` file.
 
 ### Add tool permissions
 
