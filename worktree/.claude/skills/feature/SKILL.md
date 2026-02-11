@@ -61,10 +61,7 @@ gh issue create --title "TITLE" --body "BODY"
 **Case B — Existing issue:**
 - Already have issue content from Phase 0
 
-**Post session start comment:**
-```
-gh issue comment ISSUE --body "🚀 Session started. Branch: \`feat/ISSUE-SLUG\`"
-```
+*(No comment posted — session start info is included in the Spec comment.)*
 
 ---
 
@@ -83,9 +80,11 @@ gh issue comment ISSUE --body "🚀 Session started. Branch: \`feat/ISSUE-SLUG\`
    - **Test strategy**: what to test and how
    - **Invariant check**: which invariants are affected
 
-3. Post spec as issue comment:
+3. Post spec as issue comment **(Comment 1/3)**:
    ```
-   gh issue comment ISSUE --body "## Spec
+   gh issue comment ISSUE --body "🚀 **Branch:** \`feat/ISSUE-SLUG\`
+
+   ## Spec
 
    ### Scope
    ...
@@ -114,10 +113,12 @@ gh issue comment ISSUE --body "🚀 Session started. Branch: \`feat/ISSUE-SLUG\`
 
 ## PHASE 3: WORKTREE SETUP
 
-1. Fetch latest:
+1. Sync local main with remote:
    ```
    git fetch origin
+   git switch main && git merge --ff-only origin/main
    ```
+   - If merge fails (local has diverged) → `❌ Error: Local main has diverged from origin. Resolve manually.`
 
 2. Create worktree directory:
    ```
@@ -133,10 +134,7 @@ gh issue comment ISSUE --body "🚀 Session started. Branch: \`feat/ISSUE-SLUG\`
 4. Initialize clean locks in worktree:
    - Write empty `WT_ROOT/.claude/memory/locks.md`
 
-5. Post comment:
-   ```
-   gh issue comment ISSUE --body "🏗️ Worktree ready at \`WT_ROOT\`. Starting implementation."
-   ```
+*(No comment posted — progress is tracked in the living progress comment.)*
 
 ---
 
@@ -166,17 +164,29 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
    gh issue comment ISSUE --body "🚫 Blocked: [task description]. Error: [details]"
    ```
 
-**After each completed wave:**
-```
-cd WT_ROOT && git add -A && git commit -m "feat(SLUG): wave N — [summary]"
-```
+**After EVERY completed wave, run these 3 steps in order — NO EXCEPTIONS:**
 
-**Every 3 tasks:** compress context via `/summarize-context`
+1. **Commit:**
+   ```
+   cd WT_ROOT && git add -A && git commit -m "feat(SLUG): wave N — [summary]"
+   ```
 
-**Post progress every wave:**
-```
-gh issue comment ISSUE --body "📊 Progress: X/Y tasks complete."
-```
+2. **Post/update progress comment (Comment 2/3):**
+   ```
+   gh issue comment ISSUE --edit-last --body "## 📊 Progress
+   ✅ Wave 1: [summary]
+   ✅ Wave 2: [summary]
+   ...
+   ⏳ X/Y tasks complete"
+   ```
+   If `--edit-last` fails (first wave, no previous comment), use `--body` without `--edit-last`:
+   ```
+   gh issue comment ISSUE --body "## 📊 Progress
+   ✅ Wave 1: [summary]
+   ⏳ X/Y tasks complete"
+   ```
+
+3. **Every 3 tasks:** compress context via `/summarize-context`
 
 ---
 
@@ -212,10 +222,7 @@ gh issue comment ISSUE --body "📊 Progress: X/Y tasks complete."
    " --head BRANCH --base main
    ```
 
-5. Post PR URL to issue:
-   ```
-   gh issue comment ISSUE --body "✅ PR created: PR_URL"
-   ```
+5. *(PR URL is included in the final summary comment — Phase 6.)*
 
 ---
 
@@ -227,13 +234,21 @@ gh issue comment ISSUE --body "📊 Progress: X/Y tasks complete."
    cp WT_ROOT/.claude/memory/project-state.md REPO_ROOT/.claude/memory/archive/feature-ISSUE-$(date +%Y%m%d).md
    ```
 
-2. Post final summary to issue:
+2. Post final summary to issue **(Comment 3/3)**:
    ```
-   gh issue comment ISSUE --body "## Summary
-   - Branch: \`BRANCH\`
-   - PR: PR_URL
-   - Tasks: Y/Y complete
-   - Status: Ready for review"
+   gh issue comment ISSUE --body "## ✅ Feature Complete
+
+   **PR:** PR_URL
+   **Branch:** \`BRANCH\`
+   **Tasks:** Y/Y complete
+
+   <details><summary>Changes</summary>
+
+   [list of files changed]
+
+   </details>
+
+   Ready for review."
    ```
 
 3. **DO NOT remove worktree** — may need fixes post-review
