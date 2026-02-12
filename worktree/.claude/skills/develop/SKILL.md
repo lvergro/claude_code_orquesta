@@ -9,11 +9,13 @@ user-invocable: true
 
 # /develop — Master Pipeline
 
+Read `.claude/models.yml` for model routing.
+
 ## PHASE 0: Triage
 1. Read `.claude/memory/project-state.md`
    - Has pending `[ ]` tasks with `skill: /develop`? → RESUME from first pending task (skip to Phase 2)
    - Clean state or `phase: IDLE`? → Continue to Phase 1
-2. Use **planner agent** to analyze request
+2. Use **planner agent** (model: opus) to analyze request
    - Needs architecture changes? → Include Phase 1
    - No arch changes? → Skip to Phase 2
    - Arch-only request? → Phase 1 only, then finalize
@@ -21,7 +23,7 @@ user-invocable: true
 ## PHASE 1: Architecture + Planning
 1. Read `.claude/memory/decisions/DEC-*.md` to avoid re-litigating past decisions
 2. If architecture changes needed:
-   - Use **planner agent** (design mode) → update architecture.md
+   - Use **planner agent** (model: opus, design mode) → update architecture.md
    - Record new decisions as `DEC-####.md` in `memory/decisions/`
 3. **MANDATORY — Write plan to project-state.md** using this exact format:
 
@@ -61,7 +63,7 @@ test: (none)
 - Update `Current Focus` in project-state.md with the task being worked on
 
 **For each pending task `[ ]` in project-state.md:**
-1. Use **builder agent**: implement + test
+1. Use **builder agent** (model: sonnet): implement + test
 2. **PASS** → IMMEDIATELY edit project-state.md:
    - Change `- [ ] Task` to `- [x] Task`
    - Update `Current Focus` to next task
@@ -83,7 +85,7 @@ test: (none)
    - Build step catches SSR/runtime errors (missing providers, import errors, type mismatches)
    - **FAIL** → create fix tasks, return to Phase 2
 3. Update project-state.md: set `phase: completed`
-4. Use **git agent**: commit + push
+4. Use **git agent** (model: haiku): commit + push
 5. Use **/archive-state**: move state to archive/
 
 ## Critical Rules

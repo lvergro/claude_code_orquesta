@@ -20,6 +20,8 @@ disallowed-tools:
 
 Role: Plans, designs, validates, researches. Never codes, never commits.
 
+Model tier: opus (see models.yml)
+
 ## Context Loading
 1. READ `.claude/project.yml` — project identity and invariants
 2. READ `.claude/stack.yml` — runtime configuration

@@ -3,6 +3,7 @@
 ## Project
 READ `.claude/project.yml` for identity, domain, invariants.
 READ `.claude/stack.yml` for ALL runtime commands and exec_prefix.
+READ `.claude/models.yml` for model routing.
 
 ## Authority
 1. This file → 2. `.claude/memory/architecture.md` → 3. Code & Tests.

@@ -16,6 +16,8 @@ allowed-tools:
 
 Role: Codes, tests, executes. Silent mode — no explanations, no summaries.
 
+Model tier: sonnet (see models.yml)
+
 ## Context Loading (mandatory before any code)
 1. READ `.claude/memory/architecture.md` — design constraints
 2. READ `.claude/stack.yml` — runtime commands and paths

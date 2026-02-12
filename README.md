@@ -202,9 +202,10 @@ claude
 ```
 your-project/
 ├── .claude/
-│   ├── CLAUDE.md                          # Entry point — refs to project.yml and stack.yml
+│   ├── CLAUDE.md                          # Entry point — refs to project.yml, stack.yml, models.yml
 │   ├── project.yml                        # WHAT: identity, domain, invariants, critical flows
 │   ├── stack.yml                          # HOW: runtime, commands, paths, conventions
+│   ├── models.yml                         # Model routing: task complexity → haiku/sonnet/opus
 │   ├── settings.local.json                # Tool permissions
 │   │
 │   ├── agents/                            # 3 subagents with native frontmatter
@@ -332,11 +333,13 @@ PHASE 0: Resume Check
 PHASE 1: Intake
   Free text → gh issue create
   Existing issue → read content
-  Post comment: "Session started"
+  Auto-label: enhancement, bug, or documentation
 
 PHASE 2: Spec
-  Planner agent produces structured spec
-  Post spec as comment on issue
+  Planner agent (opus) produces structured spec + acceptance criteria
+  Apply labels from analysis
+  Post Comment 1 — Requirements (immutable)
+  Post Comment 2 — Execution Plan (living, updated throughout)
   Write tasks to project-state.md
 
 PHASE 3: Worktree Setup
@@ -346,17 +349,17 @@ PHASE 3: Worktree Setup
 
 PHASE 4: Execution (inside the worktree — strict isolation)
   NEVER read/write to REPO_ROOT — worktree is the project root
-  Builder agent implements + tests each task
+  Builder agent (sonnet) implements + tests each task
   Commits per wave inside the worktree
-  Post progress to issue
+  Update Comment 2 with progress after each wave
 
 PHASE 5: Integration
   Run validate (tests + build) → catches runtime errors
-  git push → gh pr create
-  Post PR URL to issue
+  git push → gh pr create (haiku)
+  Final update to Comment 2 with PR URL
 
 PHASE 6: Cleanup
-  Archive state, post final summary
+  Archive state (haiku)
   DO NOT remove worktree (may need fixes post-review)
 ```
 
@@ -398,12 +401,13 @@ Each session claims a different task via coordination in `locks.md`. Locks older
 
 ## What to Edit Per Project
 
-Only 3 files contain your project-specific data. Everything else is generic framework.
+Only 4 files contain your project-specific data. Everything else is generic framework.
 
 | File | What to put | When to edit |
 |------|------------|--------------|
 | `project.yml` | Name, domain, tenant config, invariants, critical flows, protected areas | When adopting the framework |
 | `stack.yml` | Runtime, commands, paths, stack conventions | When adopting the framework |
+| `models.yml` | Model routing: which Claude model (haiku/sonnet/opus) per task type | When adopting the framework or tuning costs |
 | `memory/architecture.md` | System design, data model, roles, patterns | At start and as architecture evolves |
 
 Agents, skills, and CLAUDE.md **are not edited** — they're generic and reference `{stack.*}` and `{project.*}`.

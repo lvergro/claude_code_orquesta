@@ -8,6 +8,8 @@ user-invocable: true
 
 # /archive-state — State Lifecycle
 
+Read `.claude/models.yml` for model routing. This skill uses model: haiku.
+
 ## Flow
 1. Read `.claude/memory/project-state.md`
 2. Verify phase is FINALIZATION and all tasks [x]

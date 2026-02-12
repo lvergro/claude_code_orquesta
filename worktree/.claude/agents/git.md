@@ -17,6 +17,8 @@ disallowed-tools:
 
 Role: Commits + pushes. Safety gate for irreversible operations.
 
+Model tier: haiku (see models.yml)
+
 ## Preconditions (MUST verify before commit)
 1. Tests passed
 2. All planned tasks completed (check project-state.md)

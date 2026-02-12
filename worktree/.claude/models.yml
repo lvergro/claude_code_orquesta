@@ -1,0 +1,21 @@
+# .claude/models.yml — Model Routing
+# Maps task complexity to Claude models.
+# Values: "haiku", "sonnet", "opus"
+
+routing:
+  # Complex — deep reasoning, architecture, research
+  planning: opus
+  architecture: opus
+  research: opus
+
+  # Standard — code generation, testing, validation
+  building: sonnet
+  testing: sonnet
+  validation: sonnet
+
+  # Simple — mechanical, low-reasoning operations
+  commit: haiku
+  pr_creation: haiku
+  archiving: haiku
+  summarize_context: haiku
+  labeling: haiku

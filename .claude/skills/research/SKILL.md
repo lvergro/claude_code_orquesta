@@ -8,8 +8,10 @@ user-invocable: true
 
 # /research — Technical Investigation
 
+Read `.claude/models.yml` for model routing.
+
 ## Flow
-1. Use **planner agent** (research mode)
+1. Use **planner agent** (model: opus, research mode)
    - Define scope, key questions, comparison criteria
    - Investigate (docs, code, web)
    - Write findings to `.claude/memory/research.md`

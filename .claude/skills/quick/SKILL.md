@@ -8,6 +8,8 @@ user-invocable: true
 
 # /quick — Fast Path
 
+Read `.claude/models.yml` for model routing.
+
 ## Gate (MUST validate)
 Read `.claude/project.yml` → `gate_protected_areas`.
 If the change touches ANY protected area → ABORT, suggest /develop instead.
@@ -17,5 +19,5 @@ If the change touches ANY protected area → ABORT, suggest /develop instead.
 2. Run **/validate-invariants** — if FAIL → ABORT with violation details.
 
 ## Flow
-1. Use **builder agent**: implement + test
-2. If PASS → Use **git agent**: commit
+1. Use **builder agent** (model: sonnet): implement + test
+2. If PASS → Use **git agent** (model: haiku): commit

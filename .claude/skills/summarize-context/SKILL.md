@@ -8,6 +8,8 @@ user-invocable: true
 
 # /summarize-context — Context Compression
 
+Read `.claude/models.yml` for model routing. This skill uses model: haiku.
+
 ## Target File
 `.claude/memory/project-state.md`
 

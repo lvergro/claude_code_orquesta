@@ -8,6 +8,8 @@ user-invocable: true
 
 # /validate-invariants — Safety Check
 
+Read `.claude/models.yml` for model routing. This skill uses model: sonnet.
+
 ## Source of Rules
 Read `.claude/project.yml` → `invariants` section.
 

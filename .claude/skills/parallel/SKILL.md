@@ -9,6 +9,8 @@ user-invocable: true
 
 # /parallel — Multi-Session Execution
 
+Read `.claude/models.yml` for model routing.
+
 ## Flow
 1. Read `project-state.md`
 2. Identify current wave (first wave with pending [ ] tasks)
@@ -16,7 +18,7 @@ user-invocable: true
 4. **Stale lock check:** Any lock older than 30 minutes is expired — remove it and treat the task as unlocked.
 5. For each unlocked task in the wave:
    - Write lock: `- [task_id]: LOCKED at [timestamp]` in locks.md
-   - Use **builder agent**: implement + test
+   - Use **builder agent** (model: sonnet): implement + test
    - If PASS → mark [x] in project-state.md, remove lock
    - If FAIL → remove lock, report error
 

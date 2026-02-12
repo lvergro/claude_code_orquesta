@@ -202,9 +202,10 @@ claude
 ```
 tu-proyecto/
 ├── .claude/
-│   ├── CLAUDE.md                          # Entry point — refs a project.yml y stack.yml
+│   ├── CLAUDE.md                          # Entry point — refs a project.yml, stack.yml, models.yml
 │   ├── project.yml                        # QUE: identidad, dominio, invariantes, flujos criticos
 │   ├── stack.yml                          # COMO: runtime, comandos, paths, convenciones
+│   ├── models.yml                         # Routing de modelos: complejidad → haiku/sonnet/opus
 │   ├── settings.local.json                # Permisos de herramientas
 │   │
 │   ├── agents/                            # 3 subagents con frontmatter nativo
@@ -332,11 +333,13 @@ PHASE 0: Resume Check
 PHASE 1: Intake
   Descripcion libre → gh issue create
   Issue existente → leer contenido
-  Post comment: "Session started"
+  Auto-label: enhancement, bug, o documentation
 
 PHASE 2: Spec
-  Planner agent produce spec estructurada
-  Post spec como comment en issue
+  Planner agent (opus) produce spec estructurada + criterios de aceptacion
+  Aplicar labels del analisis
+  Post Comment 1 — Requirements (inmutable)
+  Post Comment 2 — Execution Plan (vivo, se actualiza durante ejecucion)
   Escribir tasks a project-state.md
 
 PHASE 3: Worktree Setup
@@ -346,17 +349,17 @@ PHASE 3: Worktree Setup
 
 PHASE 4: Execution (dentro del worktree — aislamiento estricto)
   NUNCA leer/escribir en REPO_ROOT — el worktree es la raiz del proyecto
-  Builder agent implementa + testea cada task
+  Builder agent (sonnet) implementa + testea cada task
   Commits por wave dentro del worktree
-  Post progreso al issue
+  Actualizar Comment 2 con progreso despues de cada wave
 
 PHASE 5: Integration
   Ejecutar validate (tests + build) → detecta errores de runtime
-  git push → gh pr create
-  Post PR URL al issue
+  git push → gh pr create (haiku)
+  Actualizacion final de Comment 2 con PR URL
 
 PHASE 6: Cleanup
-  Archivar state, post resumen final
+  Archivar state (haiku)
   NO remover worktree (puede necesitar fixes post-review)
 ```
 
@@ -398,12 +401,13 @@ Cada sesion toma una tarea diferente via coordinacion en `locks.md`. Locks con m
 
 ## Que Editar por Proyecto
 
-Solo 3 archivos contienen datos de tu proyecto. El resto es framework generico.
+Solo 4 archivos contienen datos de tu proyecto. El resto es framework generico.
 
 | Archivo | Que poner | Cuando editarlo |
 |---------|-----------|-----------------|
 | `project.yml` | Nombre, dominio, tenant config, invariantes, flujos criticos, areas protegidas | Al adoptar el framework |
 | `stack.yml` | Runtime, comandos, paths, convenciones del stack | Al adoptar el framework |
+| `models.yml` | Routing de modelos: que modelo Claude (haiku/sonnet/opus) por tipo de tarea | Al adoptar el framework o ajustar costos |
 | `memory/architecture.md` | Diseno del sistema, modelo de datos, roles, patrones | Al inicio y cuando evolucione la arquitectura |
 
 Agents, skills y CLAUDE.md **no se editan** — son genericos y referencian `{stack.*}` y `{project.*}`.
