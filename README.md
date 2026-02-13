@@ -137,6 +137,19 @@ framework:
   orm: "Prisma"
 ```
 
+### Step 3b: Configure schema sync (optional)
+
+If your project has ORM models, migrations, or SQL files, add the `schema` section to `stack.yml` so the framework auto-syncs `memory/schema.md` at the start of each `/develop` or `/feature`:
+
+```yaml
+schema:
+  source: models              # models | migrations | sql | manual
+  paths:
+    - prisma/schema.prisma    # Globs to your model/migration/SQL files
+```
+
+The schema is stored in a compact YAML-like format (~60% fewer tokens than SQL DDL), and only re-synced when the source files change.
+
 Other stack examples:
 
 ```yaml
@@ -223,6 +236,7 @@ your-project/
 │   │   ├── summarize-context/SKILL.md     #   Context compression
 │   │   ├── validate-invariants/SKILL.md   #   Invariant verification
 │   │   ├── write-tests/SKILL.md           #   Testing strategy
+│   │   ├── sync-schema/SKILL.md            #   Schema sync (auto + manual)
 │   │   ├── prepare-commit/SKILL.md        #   Commit message generation
 │   │   ├── analyze-architecture/SKILL.md  #   Architecture drift detection
 │   │   └── archive-state/SKILL.md         #   Archive completed state
@@ -264,6 +278,7 @@ Skills are workflows invoked with `/name` inside Claude Code.
 
 | Skill | What it does |
 |-------|-------------|
+| `/sync-schema` | Sync `memory/schema.md` with model/migration files |
 | `/parallel` | Execute tasks from the current wave in multiple terminals |
 | `/audit` | Security audit of the codebase |
 | `/write-tests` | Define testing strategy and generate tests |
@@ -408,7 +423,8 @@ Only 4 files contain your project-specific data. Everything else is generic fram
 | `project.yml` | Name, domain, tenant config, invariants, critical flows, protected areas | When adopting the framework |
 | `stack.yml` | Runtime, commands, paths, stack conventions | When adopting the framework |
 | `models.yml` | Model routing: which Claude model (haiku/sonnet/opus) per task type | When adopting the framework or tuning costs |
-| `memory/architecture.md` | System design, data model, roles, patterns | At start and as architecture evolves |
+| `memory/architecture.md` | System design, roles, patterns | At start and as architecture evolves |
+| `memory/schema.md` | Auto-synced data model (configure `schema` in stack.yml) | Auto-updated by pipelines |
 
 Agents, skills, and CLAUDE.md **are not edited** — they're generic and reference `{stack.*}` and `{project.*}`.
 
@@ -421,6 +437,7 @@ Agents, skills, and CLAUDE.md **are not edited** — they're generic and referen
 | File | Purpose | Written by |
 |------|---------|------------|
 | `architecture.md` | System design | Planner agent |
+| `schema.md` | Data model (compact, token-efficient) | /sync-schema (auto at pipeline start) |
 | `project-state.md` | Active tasks, progress, focus | Planner + skills |
 | `research.md` | Technical research | Planner agent |
 | `decisions/DEC-*.md` | Architectural decisions with context and alternatives | Planner agent |

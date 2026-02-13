@@ -12,6 +12,7 @@ READ `.claude/models.yml` for model routing.
 - Architecture: `.claude/memory/architecture.md`
 - State: `.claude/memory/project-state.md`
 - Research: `.claude/memory/research.md`
+- Schema: `.claude/memory/schema.md` (auto-synced, on-demand read)
 - Decisions: `.claude/memory/decisions/DEC-*.md`
 
 ## Invariants

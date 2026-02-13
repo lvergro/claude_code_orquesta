@@ -18,31 +18,36 @@ Read `.claude/models.yml` for model routing.
 
 ## phase 0: resume check
 
-1. Parse input:
+1. **Schema verification** — Run `/sync-schema` auto-verification:
+   - Read `.claude/stack.yml` → `schema` section. Not configured → skip silently.
+   - If configured, check if `schema.md` is stale (files in `schema.paths` newer than `Last synced` date).
+   - Stale or missing → run full `/sync-schema` before continuing.
+
+2. Parse input:
    - Number or `#N` → ISSUE = N
    - URL `https://github.com/.../issues/N` → extract N
    - Free text → will create issue in Phase 1
 
-2. Verify GitHub CLI auth:
+3. Verify GitHub CLI auth:
    ```
    gh auth status
    ```
    - FAIL → `❌ Error: Run 'gh auth login' first.`
 
-3. If ISSUE exists, fetch it:
+4. If ISSUE exists, fetch it:
    ```
    gh issue view ISSUE --json number,title,body,state,labels
    ```
    - Issue not found → `❌ Error: Issue #ISSUE not found.`
    - Issue closed → warn user, ask confirmation to proceed
 
-4. Derive identifiers:
+5. Derive identifiers:
    - `SLUG` = kebab-case of issue title, max 40 chars
    - `BRANCH` = `feat/ISSUE-SLUG` (e.g. `feat/42-add-notifications`)
    - `REPO_ROOT` = `git rev-parse --show-toplevel`
    - `WT_ROOT` = `REPO_ROOT/../.worktrees/BRANCH`
 
-5. Check if worktree already exists:
+6. Check if worktree already exists:
    ```
    git worktree list | grep BRANCH
    ```
@@ -237,13 +242,20 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
    - Build step catches SSR/runtime errors (missing providers, import errors, type mismatches)
    - **FAIL** → create fix tasks, return to Phase 4
 
-3. Push branch:
+3. Manual verification (if stack uses docker):
+   - Stop any running containers on the same port: `cd REPO_ROOT && docker compose down`
+   - Start containers in worktree: `cd WT_ROOT && docker compose up -d`
+   - Ask user to verify at the exposed URL (e.g. `http://localhost:3001`)
+   - Wait for user confirmation before proceeding
+   - **FAIL** → create fix tasks, return to Phase 4
+
+4. Push branch:
    ```
    cd WT_ROOT && git push -u origin BRANCH
    ```
    - Push rejected → `cd WT_ROOT && git pull --rebase origin BRANCH`, retry once
 
-4. Create PR (model: haiku):
+5. Create PR (model: haiku):
    ```
    gh pr create --title "feat: ISSUE_TITLE" --body "Closes #ISSUE
 
@@ -258,7 +270,7 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
    " --head BRANCH --base main
    ```
 
-5. Final update to Comment 2 (Execution Plan) via `--edit-last`:
+6. Final update to Comment 2 (Execution Plan) via `--edit-last`:
    ```
    gh issue comment ISSUE --edit-last --body "## Execution
 

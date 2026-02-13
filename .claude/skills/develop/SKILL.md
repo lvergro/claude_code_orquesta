@@ -12,10 +12,14 @@ user-invocable: true
 Read `.claude/models.yml` for model routing.
 
 ## phase 0: triage
-1. Read `.claude/memory/project-state.md`
+1. **Schema verification** — Run `/sync-schema` auto-verification:
+   - Read `.claude/stack.yml` → `schema` section. Not configured → skip silently.
+   - If configured, check if `schema.md` is stale (files in `schema.paths` newer than `Last synced` date).
+   - Stale or missing → run full `/sync-schema` before continuing.
+2. Read `.claude/memory/project-state.md`
    - Has pending `[ ]` tasks with `skill: /develop`? → RESUME from first pending task (skip to Phase 2)
    - Clean state or `phase: IDLE`? → Continue to Phase 1
-2. Use **planner agent** (model: opus) to analyze request
+3. Use **planner agent** (model: opus) to analyze request
    - Needs architecture changes? → Include Phase 1
    - No arch changes? → Skip to Phase 2
    - Arch-only request? → Phase 1 only, then finalize
