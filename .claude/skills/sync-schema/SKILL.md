@@ -47,7 +47,7 @@ Synchronizes `.claude/memory/schema.md` with the actual data model files.
 
 6. Output: `✅ Done: schema.md synced — N tables from {schema.source}`
 
-## auto-verification (used by /develop and /feature)
+## auto-verification (used by /feature)
 
 This is the verification step injected at pipeline start:
 

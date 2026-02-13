@@ -3,7 +3,7 @@
 Last synced: (never)
 
 This file is the lightweight, token-efficient representation of the project's data model.
-It is updated automatically at the start of `/develop` and `/feature` when drift is detected.
+It is updated automatically at the start of `/feature` when drift is detected.
 Manual sync: `/sync-schema`
 
 ---

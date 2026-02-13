@@ -45,10 +45,10 @@ critical_flows: []
   #   tables: [payments, balances, receipts]
   #   type: transaction
 
-# Areas that /quick will reject — forces you to use /develop instead
+# Areas that require extra care during /feature execution
 gate_protected_areas:
   - pattern: "migrations/"
-    reason: Schema changes require full /develop pipeline
+    reason: Schema changes require careful planning
   # Add patterns for sensitive areas:
   # - pattern: "auth/**"
   #   reason: Authentication logic

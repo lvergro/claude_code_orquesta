@@ -70,7 +70,7 @@ conventions:
 #   orm: "Prisma"
 
 # Schema sync — keeps .claude/memory/schema.md up to date
-# The /develop and /feature pipelines auto-verify at startup.
+# The /feature pipeline auto-verifies at startup.
 # Manual sync: /sync-schema
 # schema:
 #   source: models                           # models | migrations | sql | manual

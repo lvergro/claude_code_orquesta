@@ -50,9 +50,9 @@ Rules that must NEVER be violated. The agent stops and reports if any breaks.
 
 ## Gate-Protected Areas
 
-Areas that `/quick` will reject — forces `/develop` instead.
+Areas that require extra care during `/feature` execution.
 
-- `migrations/` — Schema changes require full /develop pipeline
+- `migrations/` — Schema changes require careful planning
 <!-- Add patterns for sensitive areas:
 - `auth/**` — Authentication logic
 - `middleware*` — Request routing and security

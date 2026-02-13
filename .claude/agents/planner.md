@@ -46,7 +46,7 @@ Model tier: opus (see models.yml)
 ```markdown
 # Project State
 updated: [YYYY-MM-DD]
-skill: /develop
+skill: /feature
 phase: execution
 
 ## Active Tasks

@@ -67,7 +67,7 @@ All workflows and skills reference these values instead of hardcoded commands.
 ## Schema
 
 <!-- Schema sync — keeps .agent/memory/schema.md up to date -->
-<!-- The /develop and /feature workflows auto-verify at startup. -->
+<!-- The /feature workflow auto-verifies at startup. -->
 <!-- Manual sync: /sync-schema -->
 <!-- - **Source:** models -->
 <!-- - **Paths:** src/models/**/*.ts -->

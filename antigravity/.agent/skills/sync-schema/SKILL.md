@@ -43,7 +43,7 @@ Synchronizes `.agent/memory/schema.md` with the actual data model files.
 
 6. Output: `Done: schema.md synced — N tables from {source}`
 
-## Auto-Verification (used by /develop and /feature)
+## Auto-Verification (used by /feature)
 
 This is the verification step injected at pipeline start:
 
