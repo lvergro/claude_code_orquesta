@@ -34,9 +34,11 @@ Change THIS file when adapting the framework to a different project.
 Rules that must NEVER be violated. The agent stops and reports if any breaks.
 
 1. **Security** (critical): No hardcoded secrets. Auth tokens are the source of truth.
+2. **Workflow Fidelity** (high): Strictly follow `/feature` phases (0-6). GitHub issues must mirror `project-state.md`.
+3. **Test Coverage** (high): Every core logic change MUST include a corresponding test (`write-tests` skill).
 <!-- Add your project-specific invariants:
-2. **Tenant Isolation** (critical): All DB queries filter by tenant_id. No cross-tenant data leaks.
-3. **Atomic Transactions** (critical): Payment and inventory flows MUST be atomic. No partial success.
+4. **Tenant Isolation** (critical): All DB queries filter by tenant_id. No cross-tenant data leaks.
+5. **Atomic Transactions** (critical): Payment and inventory flows MUST be atomic. No partial success.
 -->
 
 ## Critical Flows
