@@ -10,20 +10,20 @@ user-invocable: true
 
 Read `.claude/models.yml` for model routing. This skill uses model: opus.
 
-## Context
+## context
 1. Read `.claude/memory/architecture.md` — the source of truth
 2. Explore current directory structure and file patterns
 
-## Analysis
+## analysis
 1. Are there undocumented directories or modules?
 2. Are files in forbidden locations (e.g., business logic in view layer)?
 3. Are naming conventions respected?
 4. Do database queries match documented patterns?
 5. Are new features properly declared in architecture.md?
 
-## Output
+## output
 - If consistent: "✅ Architecture consistent."
 - If violations found: List each violation with suggested fix.
 
-## Constraints
+## constraints
 - Do NOT modify any files during analysis. Report only.

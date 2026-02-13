@@ -11,7 +11,7 @@ user-invocable: true
 
 Read `.claude/models.yml` for model routing.
 
-## Flow
+## flow
 1. Read `project-state.md`
 2. Identify current wave (first wave with pending [ ] tasks)
 3. Read `.claude/memory/locks.md`
@@ -22,13 +22,13 @@ Read `.claude/models.yml` for model routing.
    - If PASS → mark [x] in project-state.md, remove lock
    - If FAIL → remove lock, report error
 
-## Usage
+## usage
 Open 2-3 Claude Code terminals:
 ```bash
-# Terminal 1
+# terminal 1
 /parallel
 
-# Terminal 2
+# terminal 2
 /parallel
 ```
 

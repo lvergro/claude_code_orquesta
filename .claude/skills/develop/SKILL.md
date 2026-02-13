@@ -11,7 +11,7 @@ user-invocable: true
 
 Read `.claude/models.yml` for model routing.
 
-## PHASE 0: Triage
+## phase 0: triage
 1. Read `.claude/memory/project-state.md`
    - Has pending `[ ]` tasks with `skill: /develop`? → RESUME from first pending task (skip to Phase 2)
    - Clean state or `phase: IDLE`? → Continue to Phase 1
@@ -20,7 +20,7 @@ Read `.claude/models.yml` for model routing.
    - No arch changes? → Skip to Phase 2
    - Arch-only request? → Phase 1 only, then finalize
 
-## PHASE 1: Architecture + Planning
+## phase 1: architecture + planning
 1. Read `.claude/memory/decisions/DEC-*.md` to avoid re-litigating past decisions
 2. If architecture changes needed:
    - Use **planner agent** (model: opus, design mode) → update architecture.md
@@ -28,36 +28,36 @@ Read `.claude/models.yml` for model routing.
 3. **MANDATORY — Write plan to project-state.md** using this exact format:
 
 ```markdown
-# Project State
+# project state
 updated: [YYYY-MM-DD]
 skill: /develop
 phase: execution
 
-## Active Tasks
+## active tasks
 
-### Wave 1: [Wave Name]
-- [ ] Task description
-- [ ] Task description
-
-### Wave 2: [Wave Name]
+### wave 1: [wave name]
 - [ ] Task description
 - [ ] Task description
 
-## Current Focus
+### wave 2: [wave name]
+- [ ] Task description
+- [ ] Task description
+
+## current focus
 task: (starting)
 file: (none)
 test: (none)
 
-## Blockers
+## blockers
 (none)
 
-## Recent Decisions (last 5)
+## recent decisions (last 5)
 (none)
 ```
 
 4. Output the plan summary. Wait for user approval before proceeding to Phase 2.
 
-## PHASE 2: Execution Loop
+## phase 2: execution loop
 
 **BEFORE each task:**
 - Update `Current Focus` in project-state.md with the task being worked on
@@ -77,7 +77,7 @@ test: (none)
 - Use **/summarize-context** to compress state
 - Print: `Context compressed. Continuing task N.`
 
-## PHASE 3: Finalization
+## phase 3: finalization
 1. Verify ALL tasks `[x]` in project-state.md
 2. Run final validation: `{stack.runtime.exec_prefix} {stack.commands.validate}`
    - If `validate` is defined in stack.yml, run it (typically: tests + build)
@@ -88,7 +88,7 @@ test: (none)
 4. Use **git agent** (model: haiku): commit + push
 5. Use **/archive-state**: move state to archive/
 
-## Critical Rules
+## critical rules
 - **NEVER skip writing to project-state.md.** Every task state change MUST be persisted.
 - **project-state.md is the source of truth.** If the session crashes, the next `/develop` reads it and resumes.
 - **Mark tasks [x] one at a time**, not in batch. Each mark = one Edit to the file.

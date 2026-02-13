@@ -10,10 +10,10 @@ user-invocable: true
 
 Read `.claude/models.yml` for model routing. This skill uses model: haiku.
 
-## Target File
+## target file
 `.claude/memory/project-state.md`
 
-## Steps
+## steps
 1. Analyze recent conversation: What was achieved? What decisions were made? What's pending?
 2. Update project-state.md with current state:
    - Mark completed tasks [x]
@@ -22,7 +22,7 @@ Read `.claude/models.yml` for model routing. This skill uses model: haiku.
    - Add recent decisions (keep last 5)
 3. Output: "Memory updated in project-state.md. Ready to continue with clean context."
 
-## Cap
+## cap
 project-state.md MUST NOT exceed 80 lines. If over cap:
 - Archive completed waves to `.claude/memory/archive/`
 - Keep only active wave + current focus + blockers

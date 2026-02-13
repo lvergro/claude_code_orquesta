@@ -10,30 +10,30 @@ user-invocable: true
 
 Read `.claude/models.yml` for model routing. This skill uses model: haiku.
 
-## Flow
+## flow
 1. Read `.claude/memory/project-state.md`
 2. Verify phase is FINALIZATION and all tasks [x]
 3. Copy current content to `.claude/memory/archive/[YYYY-MM-DD]-[feature-slug].md`
 4. Reset project-state.md to clean template:
 
 ```markdown
-# Project State
+# project state
 updated: [timestamp]
 skill: IDLE
 phase: IDLE
 
-## Active Tasks
+## active tasks
 (none)
 
-## Current Focus
+## current focus
 task: (none)
 file: (none)
 test: (none)
 
-## Blockers
+## blockers
 (none)
 
-## Recent Decisions (last 5)
+## recent decisions (last 5)
 (none)
 ```
 

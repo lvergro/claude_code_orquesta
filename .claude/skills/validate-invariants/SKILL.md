@@ -10,27 +10,27 @@ user-invocable: true
 
 Read `.claude/models.yml` for model routing. This skill uses model: sonnet.
 
-## Source of Rules
+## source of rules
 Read `.claude/project.yml` → `invariants` section.
 
-## Checks
+## checks
 
-### Security
+### security
 - No hardcoded API keys, tokens, or passwords in source code
 - No PII or sensitive data printed in logs or console
 
-### Architecture
+### architecture
 - Code respects layer boundaries defined in architecture.md
 - New files are in correct directories per conventions
 
-### Business Logic
+### business logic
 - Changes don't include unrequested features (gold plating)
 - Domain rules are respected
 
-### Tenant Isolation
+### tenant isolation
 - All DB queries filter by tenant column (from project.yml)
 - No cross-tenant joins without validation
 
-## Result
+## result
 - **PASS**: "✅ Invariants validated: system is stable and secure."
 - **FAIL**: "❌ CRITICAL VIOLATION: [description]". Reject the change.

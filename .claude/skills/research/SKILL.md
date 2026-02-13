@@ -10,7 +10,7 @@ user-invocable: true
 
 Read `.claude/models.yml` for model routing.
 
-## Flow
+## flow
 1. Use **planner agent** (model: opus, research mode)
    - Define scope, key questions, comparison criteria
    - Investigate (docs, code, web)

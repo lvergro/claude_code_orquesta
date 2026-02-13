@@ -16,7 +16,7 @@ Read `.claude/models.yml` for model routing.
 
 ---
 
-## PHASE 0: RESUME CHECK
+## phase 0: resume check
 
 1. Parse input:
    - Number or `#N` → ISSUE = N
@@ -51,7 +51,7 @@ Read `.claude/models.yml` for model routing.
 
 ---
 
-## PHASE 1: INTAKE
+## phase 1: intake
 
 **Case A — Free-text description (no issue number):**
 ```
@@ -72,7 +72,7 @@ gh issue create --title "TITLE" --body "BODY"
 
 ---
 
-## PHASE 2: SPEC
+## phase 2: spec
 
 1. Invoke **planner agent** (model: opus) with context:
    - Issue body (title + description)
@@ -142,7 +142,7 @@ gh issue create --title "TITLE" --body "BODY"
 
 ---
 
-## PHASE 3: WORKTREE SETUP
+## phase 3: worktree setup
 
 1. Sync local main with remote:
    ```
@@ -167,9 +167,9 @@ gh issue create --title "TITLE" --body "BODY"
 
 ---
 
-## PHASE 4: EXECUTION (inside worktree)
+## phase 4: execution (inside worktree)
 
-### ISOLATION RULE — MANDATORY
+### isolation rule — mandatory
 From this phase until Phase 5 completes:
 - **ALL reads and writes MUST use absolute paths under `WT_ROOT`**
 - **NEVER read from REPO_ROOT** — the main checkout is off-limits
@@ -179,7 +179,7 @@ From this phase until Phase 5 completes:
 
 If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix the path.
 
-### Execution
+### execution
 - Agents read config from: `WT_ROOT/.claude/stack.yml`, `WT_ROOT/.claude/memory/architecture.md`
 - Bash commands: `cd WT_ROOT && {command}`
 - State updates: `WT_ROOT/.claude/memory/project-state.md`
@@ -226,7 +226,7 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
 ---
 
-## PHASE 5: INTEGRATION
+## phase 5: integration
 
 1. Verify ALL tasks are `[x]` in `WT_ROOT/.claude/memory/project-state.md`
 
@@ -274,7 +274,7 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
 ---
 
-## PHASE 6: CLEANUP
+## phase 6: cleanup
 
 1. Archive state (model: haiku):
    ```
@@ -290,7 +290,7 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
 ---
 
-## Error Handling
+## error handling
 
 | Error | Action |
 |-------|--------|
@@ -303,7 +303,7 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
 ---
 
-## Resumability
+## resumability
 
 When `/feature #N` is invoked and a worktree for that issue already exists:
 
@@ -318,7 +318,7 @@ When `/feature #N` is invoked and a worktree for that issue already exists:
 
 ---
 
-## Conventions
+## conventions
 
 - **One feature = one issue = one worktree = one branch**
 - Branch naming: `feat/ISSUE-SLUG`

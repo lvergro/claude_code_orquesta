@@ -10,11 +10,11 @@ user-invocable: true
 
 Read `.claude/models.yml` for model routing. This skill uses model: sonnet.
 
-## Scope
+## scope
 Input: directory path, module name, or blank for full codebase. Examples: `src/auth`, `payments`, `/audit`.
 Audit: $ARGUMENTS (or full codebase if no arguments)
 
-## Flow
+## flow
 1. Read `.claude/project.yml` → invariants and critical_flows
 2. Read `.claude/memory/architecture.md` → security patterns
 3. Analyze codebase for:
@@ -25,7 +25,7 @@ Audit: $ARGUMENTS (or full codebase if no arguments)
    - RLS policy gaps
 4. Generate report
 
-## Output
+## output
 - Summary in conversation
 - Full report: `/docs/audits/[date]-audit-full.md`
 - Action items: `/docs/audits/TODO.md`

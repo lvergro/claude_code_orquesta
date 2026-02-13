@@ -10,16 +10,16 @@ user-invocable: true
 
 Read `.claude/models.yml` for model routing. This skill uses model: haiku.
 
-## Preconditions (ALL must pass)
+## preconditions (all must pass)
 1. Run tests: `{stack.runtime.exec_prefix} {stack.commands.test}` → PASS
 2. Check project-state.md → all tasks [x]
 3. Run /validate-invariants → PASS
 
-## Generate Message
+## generate message
 1. Analyze `git diff --staged` (or unstaged changes)
 2. Determine type: feat | fix | chore | docs
 3. Write concise message: `type: description`
 
-## Output
+## output
 - If ready: "✅ Commit ready: `type: message`"
 - If not ready: "❌ Not ready: [reason]"
