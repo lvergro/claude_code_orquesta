@@ -124,3 +124,9 @@ Read rules/project.md, rules/stack.md, and memory/architecture.md, then fill the
 | Agent definitions | `agents/*.md` | Not needed (Agent Manager) |
 | User pipelines | `skills/*/SKILL.md` | `workflows/*.md` |
 | Auto capabilities | `skills/*/SKILL.md` | `skills/*/SKILL.md` |
+
+---
+
+## License
+
+MIT License. See [LICENSE](../LICENSE) for details.

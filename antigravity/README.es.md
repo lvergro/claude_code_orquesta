@@ -122,3 +122,9 @@ Lee rules/project.md, rules/stack.md y memory/architecture.md, y llenalos.
 | Definicion de agentes | `agents/*.md` | No necesario (Agent Manager) |
 | Pipelines de usuario | `skills/*/SKILL.md` | `workflows/*.md` |
 | Capacidades auto | `skills/*/SKILL.md` | `skills/*/SKILL.md` |
+
+---
+
+## Licencia
+
+Licencia MIT. Ver [LICENSE](../LICENSE) para mas detalles.

@@ -222,4 +222,4 @@ database:
 
 ## License
 
-Free to use. Adapt it to your project.
+MIT License. See [LICENSE](LICENSE) for details.
