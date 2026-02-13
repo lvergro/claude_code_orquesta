@@ -8,29 +8,105 @@ Orquesta proporciona workflows estructurados, memoria persistente y patrones de 
 
 ## Inicio Rapido
 
-1. **Copiar a tu proyecto:**
-   ```bash
-   cp -r antigravity/.agent /ruta/a/tu/proyecto/.agent
-   cp antigravity/GEMINI.md /ruta/a/tu/proyecto/GEMINI.md
-   ```
+### Paso 1: Copiar a tu proyecto
 
-2. **Configurar la identidad del proyecto:**
-   Editar `.agent/rules/project.md` — nombre del proyecto, entidades de dominio, invariantes.
+```bash
+cp -r antigravity/.agent /ruta/a/tu/proyecto/.agent
+cp antigravity/GEMINI.md /ruta/a/tu/proyecto/GEMINI.md
+```
 
-3. **Configurar el stack:**
-   Editar `.agent/rules/stack.md` — comandos de runtime (test, lint, build, dev).
+### Paso 2: Dejar que el agente configure tu proyecto
 
-4. **Documentar la arquitectura:**
-   Editar `.agent/memory/architecture.md` — describir el diseno del sistema.
+En lugar de editar archivos manualmente, **pide al agente que lo haga por ti**. Abre tu proyecto en Antigravity y describe tu dominio:
 
-5. **Empezar a trabajar:**
-   - `/feature` — Entrega de feature completa (issue → PR)
-   - `/develop` — Pipeline maestro para cambios complejos
-   - `/quick` — Camino rapido para fixes triviales
-   - `/research` — Investigacion tecnica
-   - `/audit` — Auditoria de seguridad
-   - `/sync-schema` — Sincronizar modelo de datos desde archivos fuente
-   - `/prepare-commit` — Validar y commitear
+```
+Configura el directorio .agent/ de este proyecto.
+Es un [describe tu proyecto — ej: "SaaS multi-tenant para gestion de restaurantes"].
+
+Stack: [tu stack — ej: "Next.js 14 + Supabase + Prisma, corriendo en Docker"]
+Entidades: [tus entidades de dominio — ej: "organizaciones, usuarios, restaurantes, menus, pedidos, reservas"]
+Multi-tenant: [si/no, y como — ej: "si, RLS con columna org_id"]
+
+Invariantes clave:
+- [ej: "Todas las queries deben filtrar por org_id — no puede haber fugas de datos entre tenants"]
+- [ej: "Los totales de pedidos deben recalcularse en el servidor — nunca confiar en montos del cliente"]
+
+Flujos criticos:
+- [ej: "Creacion de pedido: validar menu → verificar disponibilidad → crear pedido → notificar cocina"]
+
+Lee rules/project.md, rules/stack.md y memory/architecture.md, y llenalos alineados a mi dominio.
+```
+
+El agente va a:
+1. Leer los archivos template (`rules/project.md`, `rules/stack.md`, `memory/architecture.md`)
+2. Llenar `project.md` con tus entidades, invariantes, flujos criticos y areas protegidas
+3. Llenar `stack.md` con tus comandos de runtime, paths y convenciones
+4. Llenar `architecture.md` con el diseno de tu sistema, modelo de datos, roles y patrones
+5. Opcionalmente configurar la sincronizacion de schema si tienes modelos ORM o migraciones
+
+> **Tip:** Mientras mas especifico seas con las reglas y restricciones de tu dominio, mejor las va a respetar el agente durante el desarrollo. Los invariantes son las barreras de seguridad — el agente se detiene y reporta si alguno se viola.
+
+### Paso 3: Verificar la configuracion
+
+Despues de que el agente configure los archivos, revisa:
+
+```
+Lee rules/project.md y rules/stack.md y dime que configuraste
+```
+
+Verifica que:
+- `project.md` tiene tus entidades, invariantes y flujos criticos
+- `stack.md` tiene tus comandos reales (test, lint, build, dev)
+- `architecture.md` refleja tu diseno real del sistema
+- Si usas modelos ORM, `stack.md` tiene la seccion de Schema configurada
+
+### Paso 4: Iniciar tu primer feature
+
+Con el framework configurado, puedes empezar a construir. Usa `/feature` para el pipeline completo o `/develop` para trabajo lineal:
+
+**Opcion A — `/feature` (recomendado para trabajo basado en issues):**
+
+```
+/feature Agregar registro de usuarios con verificacion por email
+```
+
+O referencia un issue existente de GitHub:
+
+```
+/feature #42
+```
+
+Que sucede:
+1. Crea un issue en GitHub (o lee uno existente)
+2. Planifica la implementacion: alcance, criterios de aceptacion, tareas en waves
+3. Publica la especificacion como comentario en el issue
+4. Crea un worktree aislado y branch (`feat/42-agregar-registro-usuarios`)
+5. Implementa cada tarea, ejecutando tests despues de cada una
+6. Commitea por wave, actualiza el issue con el progreso
+7. Pushea y crea un PR cuando termina
+
+Si se interrumpe en cualquier punto, ejecuta `/feature #42` de nuevo — retoma desde donde quedo.
+
+**Opcion B — `/develop` (para trabajo lineal y secuencial):**
+
+```
+/develop Implementar sistema de notificaciones
+```
+
+**Opcion C — `/quick` (para cambios triviales):**
+
+```
+/quick Corregir el texto del boton de login
+```
+
+**Otros comandos utiles:**
+
+```
+/research Comparar Redis vs Memcached para caching     # Investigar antes de decidir
+/sync-schema                                            # Forzar sincronizacion del modelo de datos
+/audit src/auth                                         # Auditoria de seguridad
+/prepare-commit                                         # Validar y commitear
+```
 
 ## Estructura
 

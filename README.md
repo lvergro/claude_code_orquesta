@@ -56,9 +56,112 @@ cp -r /path/to/framework/worktree/.claude/ ./.claude/
 
 > Both variants include the same agents, skills, and memory system. The feature-driven variant adds the `/feature` skill and permissions for `gh` and `git worktree`.
 
-### Step 2: Configure your project
+### Step 2: Let Claude configure your project
 
-Edit `.claude/project.yml` — this defines WHAT your project is:
+Instead of editing files manually, **ask Claude to do it for you**. Open Claude Code in your project and describe your domain:
+
+```bash
+claude
+```
+
+Then tell Claude what your project is about. Be specific about your domain, stack, and constraints:
+
+```
+Configure this project's .claude/ directory for my project.
+It's a [describe your project — e.g., "multi-tenant SaaS for restaurant management"].
+
+Stack: [your stack — e.g., "Next.js 14 + Supabase + Prisma, running in Docker"]
+Entities: [your domain entities — e.g., "organizations, users, restaurants, menus, orders, reservations"]
+Multi-tenant: [yes/no, and how — e.g., "yes, RLS with org_id column"]
+
+Key invariants:
+- [e.g., "All queries must filter by org_id — no cross-tenant data leaks"]
+- [e.g., "Order totals must be recalculated server-side — never trust client amounts"]
+
+Critical flows:
+- [e.g., "Order placement: validate menu → check availability → create order → notify kitchen"]
+
+Read project.yml, stack.yml, and memory/architecture.md, then fill them in aligned to my domain.
+```
+
+Claude will:
+1. Read the template files (`project.yml`, `stack.yml`, `architecture.md`)
+2. Fill in `project.yml` with your entities, invariants, critical flows, and protected areas
+3. Fill in `stack.yml` with your runtime commands, paths, and conventions
+4. Fill in `architecture.md` with your system design, data model, roles, and patterns
+5. Optionally configure `schema` sync if you have ORM models or migrations
+
+> **Tip:** The more specific you are about your domain rules and constraints, the better Claude will enforce them during development. Invariants are the guardrails — Claude will stop and report if any is violated.
+
+### Step 3: Verify the configuration
+
+After Claude configures the files, review them:
+
+```bash
+# Inside Claude Code:
+Read .claude/project.yml and .claude/stack.yml and tell me what you configured
+```
+
+Make sure:
+- `project.yml` has your entities, invariants, and critical flows
+- `stack.yml` has your actual commands (test, lint, build, dev)
+- `architecture.md` reflects your real system design
+- If you use ORM models, `stack.yml` has the `schema` section configured
+
+### Step 4: Start your first feature
+
+With the framework configured, you're ready to build. Use `/feature` for the full pipeline (Feature-driven variant) or `/develop` for the linear pipeline:
+
+**Option A — `/feature` (recommended for issue-driven work):**
+
+```bash
+claude
+# Describe what you want to build:
+/feature Add user registration with email verification
+
+# Or reference an existing GitHub issue:
+/feature #42
+```
+
+What happens:
+1. Creates a GitHub issue (or reads an existing one)
+2. Plans the implementation: scope, acceptance criteria, tasks in waves
+3. Posts the spec as a comment on the issue
+4. Creates an isolated worktree and branch (`feat/42-add-user-registration`)
+5. Implements each task, running tests after each one
+6. Commits per wave, updates the issue with progress
+7. Pushes and creates a PR when done
+
+If interrupted at any point, just run `/feature #42` again — it resumes from where it left off.
+
+**Option B — `/develop` (for linear, sequential work):**
+
+```bash
+claude
+/develop Implement notification system
+```
+
+**Option C — `/quick` (for trivial changes):**
+
+```bash
+claude
+/quick Fix the login button text
+```
+
+**Other useful commands:**
+
+```bash
+/research Compare Redis vs Memcached for caching    # Investigate before deciding
+/sync-schema                                         # Force-sync data model
+/audit src/auth                                      # Security audit
+```
+
+### Manual configuration reference
+
+If you prefer to edit the files manually instead of asking Claude, here are examples:
+
+<details>
+<summary>project.yml example</summary>
 
 ```yaml
 name: MySaaS
@@ -100,9 +203,10 @@ gate_protected_areas:
     reason: Auth and routing
 ```
 
-### Step 3: Configure your stack
+</details>
 
-Edit `.claude/stack.yml` — this defines HOW your project runs:
+<details>
+<summary>stack.yml example</summary>
 
 ```yaml
 name: node-docker-prisma
@@ -119,7 +223,7 @@ commands:
   type_check: "npx tsc --noEmit"
   build: "npm run build"
   dev: "npm run dev"
-  validate: "npx vitest run && npm run build"  # tests + build (catches runtime errors)
+  validate: "npx vitest run && npm run build"
 
 paths:
   source: "src/"
@@ -131,26 +235,21 @@ conventions:
   test_file_pattern: "{name}.test.ts"
   module_structure: "src/{module}/"
 
+schema:
+  source: models
+  paths:
+    - prisma/schema.prisma
+
 framework:
   name: "Express + Prisma"
   backend: "PostgreSQL"
   orm: "Prisma"
 ```
 
-### Step 3b: Configure schema sync (optional)
+</details>
 
-If your project has ORM models, migrations, or SQL files, add the `schema` section to `stack.yml` so the framework auto-syncs `memory/schema.md` at the start of each `/develop` or `/feature`:
-
-```yaml
-schema:
-  source: models              # models | migrations | sql | manual
-  paths:
-    - prisma/schema.prisma    # Globs to your model/migration/SQL files
-```
-
-The schema is stored in a compact YAML-like format (~60% fewer tokens than SQL DDL), and only re-synced when the source files change.
-
-Other stack examples:
+<details>
+<summary>Other stack examples</summary>
 
 ```yaml
 # Python + FastAPI
@@ -181,30 +280,7 @@ conventions:
   test_file_pattern: "{name}_test.go"
 ```
 
-### Step 4: Document your architecture
-
-Edit `.claude/memory/architecture.md` — this is the source of truth for your system design:
-
-- System overview
-- Stack and execution model
-- Data model (entities, relationships)
-- Roles and authorization
-- Critical flows (contracts: inputs → validations → steps → outputs)
-- Forbidden patterns
-
-Agents consult this file before writing any code.
-
-### Step 5: Start using it
-
-```bash
-claude
-# Inside Claude Code:
-/develop Implement notification system
-/quick Fix the login button text
-/research Compare Redis vs Memcached for caching
-/feature #42                              # (Feature-driven only)
-/feature Add real-time alerts system       # (Feature-driven only)
-```
+</details>
 
 ---
 

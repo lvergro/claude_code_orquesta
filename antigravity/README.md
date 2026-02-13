@@ -8,29 +8,105 @@ Orquesta provides structured workflows, persistent memory, and coordination patt
 
 ## Quick Start
 
-1. **Copy to your project:**
-   ```bash
-   cp -r antigravity/.agent /path/to/your/project/.agent
-   cp antigravity/GEMINI.md /path/to/your/project/GEMINI.md
-   ```
+### Step 1: Copy to your project
 
-2. **Configure your project identity:**
-   Edit `.agent/rules/project.md` — set your project name, domain entities, invariants.
+```bash
+cp -r antigravity/.agent /path/to/your/project/.agent
+cp antigravity/GEMINI.md /path/to/your/project/GEMINI.md
+```
 
-3. **Configure your stack:**
-   Edit `.agent/rules/stack.md` — set your runtime commands (test, lint, build, dev).
+### Step 2: Let the agent configure your project
 
-4. **Document your architecture:**
-   Edit `.agent/memory/architecture.md` — describe your system design.
+Instead of editing files manually, **ask the agent to do it for you**. Open your project in Antigravity and describe your domain:
 
-5. **Start working:**
-   - `/feature` — End-to-end feature delivery (issue → PR)
-   - `/develop` — Master pipeline for complex changes
-   - `/quick` — Fast path for trivial fixes
-   - `/research` — Technical investigation
-   - `/audit` — Security audit
-   - `/sync-schema` — Sync data model from source files
-   - `/prepare-commit` — Validate and commit
+```
+Configure this project's .agent/ directory for my project.
+It's a [describe your project — e.g., "multi-tenant SaaS for restaurant management"].
+
+Stack: [your stack — e.g., "Next.js 14 + Supabase + Prisma, running in Docker"]
+Entities: [your domain entities — e.g., "organizations, users, restaurants, menus, orders, reservations"]
+Multi-tenant: [yes/no, and how — e.g., "yes, RLS with org_id column"]
+
+Key invariants:
+- [e.g., "All queries must filter by org_id — no cross-tenant data leaks"]
+- [e.g., "Order totals must be recalculated server-side — never trust client amounts"]
+
+Critical flows:
+- [e.g., "Order placement: validate menu → check availability → create order → notify kitchen"]
+
+Read rules/project.md, rules/stack.md, and memory/architecture.md, then fill them in aligned to my domain.
+```
+
+The agent will:
+1. Read the template files (`rules/project.md`, `rules/stack.md`, `memory/architecture.md`)
+2. Fill in `project.md` with your entities, invariants, critical flows, and protected areas
+3. Fill in `stack.md` with your runtime commands, paths, and conventions
+4. Fill in `architecture.md` with your system design, data model, roles, and patterns
+5. Optionally configure schema sync if you have ORM models or migrations
+
+> **Tip:** The more specific you are about your domain rules and constraints, the better the agent will enforce them during development. Invariants are the guardrails — the agent will stop and report if any is violated.
+
+### Step 3: Verify the configuration
+
+After the agent configures the files, review them:
+
+```
+Read rules/project.md and rules/stack.md and tell me what you configured
+```
+
+Make sure:
+- `project.md` has your entities, invariants, and critical flows
+- `stack.md` has your actual commands (test, lint, build, dev)
+- `architecture.md` reflects your real system design
+- If you use ORM models, `stack.md` has the Schema section configured
+
+### Step 4: Start your first feature
+
+With the framework configured, you're ready to build. Use `/feature` for the full pipeline or `/develop` for linear work:
+
+**Option A — `/feature` (recommended for issue-driven work):**
+
+```
+/feature Add user registration with email verification
+```
+
+Or reference an existing GitHub issue:
+
+```
+/feature #42
+```
+
+What happens:
+1. Creates a GitHub issue (or reads an existing one)
+2. Plans the implementation: scope, acceptance criteria, tasks in waves
+3. Posts the spec as a comment on the issue
+4. Creates an isolated worktree and branch (`feat/42-add-user-registration`)
+5. Implements each task, running tests after each one
+6. Commits per wave, updates the issue with progress
+7. Pushes and creates a PR when done
+
+If interrupted at any point, just run `/feature #42` again — it resumes from where it left off.
+
+**Option B — `/develop` (for linear, sequential work):**
+
+```
+/develop Implement notification system
+```
+
+**Option C — `/quick` (for trivial changes):**
+
+```
+/quick Fix the login button text
+```
+
+**Other useful commands:**
+
+```
+/research Compare Redis vs Memcached for caching    # Investigate before deciding
+/sync-schema                                         # Force-sync data model
+/audit src/auth                                      # Security audit
+/prepare-commit                                      # Validate and commit
+```
 
 ## Structure
 
