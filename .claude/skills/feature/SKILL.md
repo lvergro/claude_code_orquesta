@@ -39,7 +39,7 @@ Read `.claude/models.yml` for model routing.
    gh issue view ISSUE --json number,title,body,state,labels
    ```
    - Issue not found → `❌ Error: Issue #ISSUE not found.`
-   - Issue closed → warn user, ask confirmation to proceed
+   - Issue closed → print `⚠️ Issue #ISSUE is closed. Proceeding anyway.` and continue
 
 5. Derive identifiers:
    - `SLUG` = kebab-case of issue title, max 40 chars
@@ -94,12 +94,18 @@ gh issue create --title "TITLE" --body "BODY"
    - **Test strategy**: what to test and how
    - **Recommended labels**: additional labels based on analysis
 
-3. Apply labels from planner analysis (model: haiku):
+3. **Present plan to user and wait for approval — ONLY USER GATE IN THIS PIPELINE:**
+   - Print the full spec: Scope, Acceptance Criteria, Invariants Affected, Tasks (all waves), Files, Test Strategy
+   - Print: `Proceed with implementation? (yes/no)`
+   - **YES** → continue to step 4
+   - **NO** → print `❌ Cancelled by user.` and STOP. Do NOT post GitHub comments or create worktree.
+
+4. Apply labels from planner analysis (model: haiku):
    ```
    gh issue edit ISSUE --add-label "label1,label2"
    ```
 
-4. Post **Comment 1 — Requirements** (posted ONCE, NEVER edited):
+5. Post **Comment 1 — Requirements** (posted ONCE, NEVER edited):
    ```
    gh issue comment ISSUE --body "## Requirements
    **Branch:** \`feat/ISSUE-SLUG\`
@@ -121,7 +127,7 @@ gh issue create --title "TITLE" --body "BODY"
    "
    ```
 
-5. Post **Comment 2 — Execution Plan** (living comment, edited throughout):
+6. Post **Comment 2 — Execution Plan** (living comment, edited throughout):
    ```
    gh issue comment ISSUE --body "## Execution
 
@@ -137,7 +143,7 @@ gh issue create --title "TITLE" --body "BODY"
    "
    ```
 
-6. Write tasks to `project-state.md` with metadata:
+7. Write tasks to `project-state.md` with metadata:
    ```
    skill: feature
    issue: #ISSUE
@@ -245,9 +251,8 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 3. Manual verification (if stack uses docker):
    - Stop any running containers on the same port: `cd REPO_ROOT && docker compose down`
    - Start containers in worktree: `cd WT_ROOT && docker compose up -d`
-   - Ask user to verify at the exposed URL (e.g. `http://localhost:3001`)
-   - Wait for user confirmation before proceeding
-   - **FAIL** → create fix tasks, return to Phase 4
+   - Print: `ℹ️ App running at http://localhost:3001 — proceeding to push.`
+   - Continue without waiting for user input.
 
 4. Push branch:
    ```
@@ -280,7 +285,7 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
    ---
    **PR:** PR_URL
-   **Status:** Complete — Y/Y tasks done
+   **Status:** Complete — Y/Y tasks done. Awaiting user merge.
    "
    ```
 
@@ -296,9 +301,9 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
 2. **DO NOT remove worktree** — may need fixes post-review
 
-3. Output: `✅ Feature #ISSUE delivered. PR: PR_URL`
+3. Output: `✅ Feature #ISSUE delivered. PR: PR_URL — merge when ready.`
 
-*(No Comment 3 — Comment 2 already contains the PR URL and final status.)*
+*(Merging is the user's responsibility.)*
 
 ---
 
