@@ -64,7 +64,7 @@ Examples:
 
 Invoke **QA agent** with:
 - Flow description from user input
-- Dev URL from `stack.yml` (or ask user if not configured)
+- Dev URL from `stack.yml` (if not configured, use `http://localhost:3000` as default)
 - Critical flows from `project.yml` as reference
 
 **QA agent steps:**
@@ -151,7 +151,7 @@ X/Y test suites passed. Z browser flows validated. N issues found.
 | Test command not configured | `❌ Error: Configure stack.commands.test in .claude/stack.yml` |
 | Playwright MCP unavailable | Fall back to manual checklist in report |
 | Test timeout | Mark as `❌ TIMEOUT` and continue |
-| Auth required for URL | Ask user for test credentials or skip auth-gated flows |
+| Auth required for URL | Skip auth-gated flows and note them in the report as `⚠️ SKIPPED: auth required` |
 
 ---
 

@@ -102,5 +102,5 @@ status: PASS | FAIL | PARTIAL
 - NEVER modify production data during browser tests — use test accounts/data
 - ALWAYS take a screenshot when a test fails (capture the error state)
 - If the dev server is not running, report `❌ Error: Dev server not running. Start with: {stack.commands.dev}`
-- Mark each step explicitly before executing it
+- Run all steps autonomously without asking for confirmation
 - Output final: `✅ QA complete: X/Y passed` or `❌ QA failed: [summary]`
