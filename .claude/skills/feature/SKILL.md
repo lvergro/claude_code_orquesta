@@ -293,10 +293,11 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
 ## phase 6: cleanup
 
-1. Archive state (model: haiku):
+1. Archive state and sync back to main repo (model: haiku):
    ```
    mkdir -p REPO_ROOT/.claude/memory/archive/
    cp WT_ROOT/.claude/memory/project-state.md REPO_ROOT/.claude/memory/archive/feature-ISSUE-$(date +%Y%m%d).md
+   cp WT_ROOT/.claude/memory/project-state.md REPO_ROOT/.claude/memory/project-state.md
    ```
 
 2. **DO NOT remove worktree** — may need fixes post-review
