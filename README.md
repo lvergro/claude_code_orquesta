@@ -19,6 +19,7 @@ Three subagents with constrained tool access, dispatched automatically:
 | `planner` | Architect + Researcher | opus | Read, analyze, design, write to memory/ | Code, commits, Bash |
 | `builder` | Programmer + QA | sonnet | Write code, tests, execute commands | Edit architecture, commits |
 | `git` | Release Manager | haiku | Commits and push | Write code or edit files |
+| `qa` | QA Validator | sonnet | Run tests, browser automation, generate QA report | Edit source code |
 
 One main workflow (`/feature`) orchestrates them through a pipeline:
 
@@ -53,10 +54,12 @@ Parallel features? Multiple terminals, each with a different `/feature #N`. Each
 ├── agents/                            # Subagents (native dispatch)
 │   ├── planner.md
 │   ├── builder.md
-│   └── git.md
+│   ├── git.md
+│   └── qa.md
 │
 ├── skills/                            # Workflows
 │   ├── feature/SKILL.md               #   /feature — main pipeline
+│   ├── qa-test/SKILL.md               #   /qa-test — E2E QA validation
 │   ├── research/SKILL.md              #   /research — technical investigation
 │   ├── audit/SKILL.md                 #   /audit — security audit
 │   ├── sync-schema/SKILL.md           #   /sync-schema — data model sync
@@ -117,6 +120,7 @@ Claude fills in `project.yml`, `stack.yml`, and `architecture.md` aligned to you
 ```bash
 /feature Add user registration with email verification
 /feature #42                    # existing issue
+/qa-test                        # full QA pass (unit + E2E)
 /research Compare Redis vs Memcached
 /audit src/auth
 /sync-schema                    # force data model sync

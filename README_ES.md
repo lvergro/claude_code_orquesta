@@ -19,6 +19,7 @@ Tres subagentes con acceso restringido a herramientas, despachados automaticamen
 | `planner` | Arquitecto + Investigador | opus | Leer, analizar, disenar, escribir en memory/ | Codigo, commits, Bash |
 | `builder` | Programador + QA | sonnet | Escribir codigo, tests, ejecutar comandos | Editar arquitectura, commits |
 | `git` | Release Manager | haiku | Commits y push | Escribir codigo o editar archivos |
+| `qa` | Validador QA | sonnet | Ejecutar tests, automatizacion de browser, generar reporte QA | Editar codigo fuente |
 
 Un workflow principal (`/feature`) los orquesta a traves de un pipeline:
 
@@ -53,10 +54,12 @@ Features en paralelo? Multiples terminales, cada una con un `/feature #N` difere
 ├── agents/                            # Subagentes (dispatch nativo)
 │   ├── planner.md
 │   ├── builder.md
-│   └── git.md
+│   ├── git.md
+│   └── qa.md
 │
 ├── skills/                            # Workflows
 │   ├── feature/SKILL.md               #   /feature — pipeline principal
+│   ├── qa-test/SKILL.md               #   /qa-test — validacion QA E2E
 │   ├── research/SKILL.md              #   /research — investigacion tecnica
 │   ├── audit/SKILL.md                 #   /audit — auditoria de seguridad
 │   ├── sync-schema/SKILL.md           #   /sync-schema — sync del modelo de datos
@@ -117,6 +120,7 @@ Claude llena `project.yml`, `stack.yml` y `architecture.md` alineados a tu domin
 ```bash
 /feature Agregar registro de usuarios con verificacion por email
 /feature #42                    # issue existente
+/qa-test                        # QA completo (unit + E2E)
 /research Comparar Redis vs Memcached
 /audit src/auth
 /sync-schema                    # forzar sync del modelo de datos
