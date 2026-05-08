@@ -1,43 +1,81 @@
 # <img src="assets/logo.png" alt="Orquesta Logo" width="50" height="50" align="center"/> Orquesta
 
-**Sistema de orquestacion de desarrollo para Claude Code.**
+**Sistema de orquestación de desarrollo para Claude Code.**
 
-Sistema de orquestacion basado en archivos que estructura como Claude Code planifica, implementa y entrega features — usando roles de subagentes, memoria persistente y workflows orientados a issues.
+Sistema basado en archivos que estructura cómo Claude Code **diseña, planifica, implementa y entrega** features — con roles de subagentes, memoria persistente y workflows orientados a issues.
 
-**Un feature = un issue = un worktree = un branch = un PR.**
+**Una feature = un issue = un worktree = una rama = un PR.**
 
 **[Read in English](README.md)** | Disponible para **[Antigravity (Gemini)](antigravity/)**
 
 ---
 
-## Como Funciona
+## Cómo funciona
 
-Cuatro subagentes con acceso a herramientas **enforced** (via `tools` / `disallowedTools` en frontmatter), despachados automaticamente:
+Cuatro subagentes con acceso a herramientas **enforced** (mediante `tools` / `disallowedTools` en frontmatter), despachados automáticamente:
 
 | Agent | Rol | Modelo | Puede | No puede |
 |-------|-----|--------|-------|----------|
-| `planner` | Arquitecto + Investigador | `opus` | Leer, analizar, disenar, escribir en memory/ | Bash, codigo, commits |
-| `builder` | Programador | `sonnet` | Escribir codigo, tests, correr comandos | Push, editar areas gate-protected |
+| `planner` | Arquitecto + Investigador | `opus` | Leer, analizar, diseñar, escribir en memory/ y docs/ | Bash, código, commits |
+| `builder` | Programador | `sonnet` | Escribir código, tests, ejecutar comandos | Push, editar áreas gate-protected |
 | `git` | Release Manager | `haiku` | Commits y push | Edit/Write de cualquier archivo |
-| `qa` | Validador QA | `sonnet` | Tests, automatizacion de browser, reportes | (sin restriccion de edit aun — por convencion) |
+| `qa` | Validador QA | `sonnet` | Tests, automatización de browser, reportes | (sin restricción de edición de fuente aún — por convención) |
 
-Un workflow principal (`/feature`) los orquesta a traves de un pipeline:
+---
+
+## Workflow en dos etapas: diseñar y luego construir
+
+Orquesta cubre el camino completo desde *idea* hasta *feature entregada* en dos etapas:
 
 ```
-/feature #42  (o descripcion en texto libre)
+                        ┌──────────────────────┐         ┌──────────────────────┐
+   idea / brief  ─────► │ pipeline /discovery  │ ──────► │  pipeline /feature   │ ─────► PR
+                        │ (artefactos diseño)  │         │  (issue → código)    │
+                        └──────────────────────┘         └──────────────────────┘
+                          docs/  +  .claude/                código  +  tests
+```
 
-PHASE 0 → Sync de schema + verificacion de resume
+### Etapa 1 — `/discovery` (diseño)
+
+Pipeline conversacional dirigido por el `planner` que produce artefactos de diseño en `docs/` y siembra `.claude/` con ellos. Se ejecuta una vez al inicio del proyecto, y luego se vuelven a correr fases individuales cuando el diseño evoluciona.
+
+| # | Fase | Output |
+|---|------|--------|
+| 1 | `/discovery-vision` | `docs/glossary.md` + resumen de visión |
+| 2 | `/discovery-functional` | `docs/requirements/functional.md` |
+| 3 | `/discovery-use-cases` | `docs/use-cases/UC-*.md` |
+| 4 | `/discovery-nfr` | `docs/requirements/non-functional.md` |
+| 5 | `/discovery-architecture` | `docs/architecture/c4-*.md` (Context, Container, Component) |
+| 6 | `/discovery-decisions` | `docs/decisions/ADR-*.md` |
+| 7 | `/discovery-intake` | poblar `.claude/project.yml` + `memory/architecture.md` + `memory/decisions/` desde `docs/` |
+
+Cada fase autodetecta el modo según el estado de `docs/`:
+
+- **greenfield** — sin docs todavía → Q&A conversacional crea la primera versión.
+- **review** — docs existen pero con issues → auditoría (completitud / consistencia interna / drift con el código) → iterar.
+- **ingest** — docs completos y frescos → confirmar y avanzar.
+
+El recorrido detallado (con sesiones de ejemplo para cada escenario) está en [Recorrido de discovery](#recorrido-de-discovery) más abajo.
+
+### Etapa 2 — `/feature` (construcción)
+
+Una vez sembrado `.claude/`, cada feature sigue un único pipeline:
+
+```
+/feature #42  (o descripción en texto libre)
+
+PHASE 0 → Sync de schema + verificación de resume
 PHASE 1 → Intake (crear/leer issue de GitHub, auto-label)
-PHASE 2 → Spec (planner: alcance, criterios de aceptacion, tareas en waves)
-PHASE 3 → Setup de worktree (branch + directorio aislado)
-PHASE 4 → Ejecucion (builder: implementar + testear cada tarea, commit por wave)
-PHASE 5 → Integracion (validar, push, crear PR)
+PHASE 2 → Spec (planner: alcance, criterios de aceptación, tareas en waves)
+PHASE 3 → Setup de worktree (rama + directorio aislado)
+PHASE 4 → Ejecución (builder: implementar + testear cada tarea, commit por wave)
+PHASE 5 → Integración (validar, push, crear PR)
 PHASE 6 → Cleanup (archivar estado)
 ```
 
-Se interrumpio? Ejecuta `/feature #42` de nuevo — retoma desde donde quedo.
+¿Se interrumpió? Ejecutar `/feature #42` de nuevo — retoma desde donde quedó.
 
-Features en paralelo? Multiples terminales, cada una con un `/feature #N` diferente. Cada worktree esta completamente aislado.
+¿Features en paralelo? Múltiples terminales, cada una con un `/feature #N` distinto. Cada worktree está completamente aislado.
 
 ---
 
@@ -45,58 +83,82 @@ Features en paralelo? Multiples terminales, cada una con un `/feature #N` difere
 
 ```
 .claude/
-├── CLAUDE.md                          # Entry point — importa project.yml + stack.yml
-├── project.yml                        # QUE: dominio, invariantes, areas gate-protected
-├── stack.yml                          # COMO: runtime, comandos, paths, fuente de schema
+├── CLAUDE.md                           # Entry point — importa project.yml + stack.yml
+├── project.yml                         # QUÉ: dominio, invariantes, áreas gate-protected
+├── stack.yml                           # CÓMO: runtime, comandos, paths, fuente de schema
 │
-├── settings.json                      # Compartido: permisos (deny/ask), hooks
-├── settings.local.json                # Personal/local: allows extra (gitignoreable)
+├── settings.json                       # Compartido: permisos (deny/ask), hooks
+├── settings.local.json                 # Personal/local: allows extra (gitignoreable)
 │
-├── hooks/                             # Hooks de ciclo de vida (corren como shell scripts)
-│   ├── gate-check.sh                  #   PreToolUse Edit|Write — bloquea gate_protected_areas
-│   └── session-context.sh             #   SessionStart — inyecta Current Focus de project-state
+├── hooks/                              # Hooks de ciclo de vida (corren como shell scripts)
+│   ├── gate-check.sh                   #   PreToolUse Edit|Write — bloquea gate_protected_areas
+│   └── session-context.sh              #   SessionStart — inyecta Current Focus de project-state
 │
-├── rules/                             # Reglas con paths (cargan solo al tocar files matching)
-│   ├── migrations.md                  #   paths: migrations/**, prisma/schema.prisma
-│   └── tests.md                       #   paths: **/*.test.*, tests/**
+├── rules/                              # Reglas con paths (cargan solo al tocar archivos matching)
+│   ├── migrations.md                   #   paths: migrations/**, prisma/schema.prisma
+│   └── tests.md                        #   paths: **/*.test.*, tests/**
 │
-├── agents/                            # Subagentes — model + tools enforced via frontmatter
-│   ├── planner.md                     #   model: opus  — disena, nunca codea
-│   ├── builder.md                     #   model: sonnet — codea silencioso
-│   ├── git.md                         #   model: haiku — commits + push
-│   └── qa.md                          #   model: sonnet — tests + browser E2E
+├── agents/                             # Subagentes — model + tools enforced via frontmatter
+│   ├── planner.md                      #   model: opus  — diseña, nunca codea
+│   ├── builder.md                      #   model: sonnet — codea silencioso
+│   ├── git.md                          #   model: haiku — commits + push
+│   └── qa.md                           #   model: sonnet — tests + browser E2E
 │
-├── skills/                            # Workflows (slash commands)
-│   ├── feature/SKILL.md               #   /feature — pipeline principal
-│   ├── qa-test/SKILL.md               #   /qa-test — validacion QA E2E
-│   ├── research/SKILL.md              #   /research — investigacion tecnica
-│   ├── audit/SKILL.md                 #   /audit — auditoria de seguridad
-│   ├── sync-schema/SKILL.md           #   /sync-schema — sync del modelo de datos
-│   ├── prepare-commit/SKILL.md        #   /prepare-commit
-│   ├── validate-invariants/SKILL.md   #   Chequeos de seguridad
-│   ├── summarize-context/SKILL.md     #   Compresion de contexto
-│   ├── write-tests/SKILL.md           #   Estrategia de tests
-│   ├── analyze-architecture/SKILL.md  #   Deteccion de drift
-│   └── archive-state/SKILL.md         #   Ciclo de vida del estado
+├── skills/                             # Workflows (slash commands)
+│   │  # ── Discovery (etapa 1 — diseño) ──
+│   ├── discovery/SKILL.md              #   /discovery — orquestador (detección de modo + estado)
+│   ├── discovery-vision/SKILL.md       #     fase 1: glossary + visión
+│   ├── discovery-functional/SKILL.md   #     fase 2: requisitos funcionales
+│   ├── discovery-use-cases/SKILL.md    #     fase 3: casos de uso
+│   ├── discovery-nfr/SKILL.md          #     fase 4: requisitos no-funcionales
+│   ├── discovery-architecture/SKILL.md #     fase 5: arquitectura C4
+│   ├── discovery-decisions/SKILL.md    #     fase 6: ADRs
+│   ├── discovery-intake/SKILL.md       #     fase 7: docs/ → .claude/
+│   │  # ── Build (etapa 2) ──
+│   ├── feature/SKILL.md                #   /feature — pipeline principal de construcción
+│   ├── qa-test/SKILL.md                #   /qa-test — validación QA E2E
+│   ├── research/SKILL.md               #   /research — investigación técnica
+│   ├── audit/SKILL.md                  #   /audit — auditoría de seguridad
+│   ├── sync-schema/SKILL.md            #   /sync-schema — sync del modelo de datos
+│   ├── prepare-commit/SKILL.md         #   /prepare-commit
+│   ├── validate-invariants/SKILL.md    #   Chequeos de seguridad
+│   ├── summarize-context/SKILL.md      #   Compresión de contexto
+│   ├── write-tests/SKILL.md            #   Estrategia de tests
+│   ├── analyze-architecture/SKILL.md   #   Detección de drift
+│   └── archive-state/SKILL.md          #   Ciclo de vida del estado
 │
-└── memory/                            # Estado persistente — fuentes de verdad cross-sesion
-    ├── architecture.md                #   Diseno del sistema
-    ├── schema.md                      #   Modelo de datos (auto-sync desde stack.yml)
-    ├── project-state.md               #   Active Tasks + Current Focus + Blockers
-    ├── research.md                    #   Log de investigacion
-    ├── decisions/                     #   ADRs (DEC-*.md)
-    └── archive/                       #   Estados completados
+└── memory/                             # Estado persistente — fuentes de verdad cross-sesión
+    ├── architecture.md                 #   Diseño del sistema (poblado por /discovery-intake)
+    ├── schema.md                       #   Modelo de datos (auto-sync desde stack.yml)
+    ├── project-state.md                #   Tareas activas + Current Focus + Blockers
+    ├── research.md                     #   Log de investigación
+    ├── decisions/                      #   ADRs como DEC-*.md (espejados desde docs/decisions/)
+    └── archive/                        #   Estados completados
+```
+
+El pipeline `/discovery` también crea un árbol `docs/` en la raíz del repositorio:
+
+```
+docs/
+├── glossary.md                         # Entidades del dominio + resumen de visión
+├── requirements/
+│   ├── functional.md                   # Lista de FRs
+│   └── non-functional.md               # Lista de NFRs (cada NFR debe ser medible)
+├── use-cases/                          # UC-NN-*.md (uno por caso de uso)
+├── architecture/                       # c4-context.md, c4-container.md, c4-component.md
+├── decisions/                          # ADR-NNN-*.md
+└── .discovery-state.md                 # Estado por fase, modo, e issues abiertos
 ```
 
 ---
 
-## Inicio Rapido
+## Inicio rápido
 
-Dos caminos: **A. Proyecto nuevo** (greenfield) o **B. Proyecto con avance** (brownfield).
+Dos caminos: **A. Proyecto nuevo** (greenfield) o **B. Proyecto existente** (brownfield). Ambos toman `/discovery` como primer comando recomendado — es lo que construye (o audita) los artefactos de diseño que `.claude/` consume.
 
 ### A. Proyecto nuevo desde cero
 
-Para un proyecto que no existe aun, o que no tiene codigo en produccion.
+Para un proyecto que no existe todavía, o uno sin código en producción.
 
 ```bash
 # 1. Crear el proyecto + repo git
@@ -106,205 +168,134 @@ git init
 # 2. Copiar el framework
 cp -r /ruta/a/claude-code-orquesta/.claude ./.claude
 
-# 3. (Opcional) ignorar tu settings local
+# 3. (Opcional) ignorar settings local
 echo ".claude/settings.local.json" >> .gitignore
 
 # 4. Abrir Claude Code
 claude
 ```
 
-Pedile a Claude que configure el framework con tu dominio y stack:
+Luego, en Claude Code:
 
 ```
-Configura el directorio .claude/ para un proyecto nuevo.
-
-Dominio: [ej: "SaaS multi-tenant para inventario de restaurantes"]
-Stack: [ej: "Next.js 14 + Supabase + Prisma, corre en Docker"]
-Entidades: [ej: "organization (tenant), user, restaurant, menu, order"]
-Multi-tenant: [si — RLS con columna org_id / no]
-
-Invariantes clave:
-- [ej: "Todas las queries de DB filtran por org_id"]
-- [ej: "Totales de pedidos se recalculan en el servidor"]
-
-Flujos criticos:
-- [ej: "Pedido: validar menu → verificar stock → cobrar → notificar cocina"]
-
-Areas gate-protegidas (confirmacion extra antes de editar):
-- migrations/
-- [ej: src/auth/]
-
-Actualiza project.yml, stack.yml y memory/architecture.md desde este brief.
-No toques skills, agents, hooks ni CLAUDE.md.
+> /discovery
 ```
 
-Despues lanza tu primer feature:
+`/discovery` recorre 7 fases (visión → requisitos → casos de uso → NFRs → C4 → ADRs → intake), un turno conversacional a la vez. La fase final siembra `.claude/project.yml` y `memory/architecture.md` para que `/feature` tenga una fuente de verdad real desde la cual trabajar.
+
+Cuando el intake termina, el planner sugiere la primera feature — típicamente el scaffold del proyecto:
 
 ```bash
 /feature Bootstrap del proyecto — scaffold Next.js + Supabase + Prisma
 ```
 
-El `planner` produce el spec, el `builder` lo ejecuta tarea por tarea,
-y el `git` hace commit por wave.
+El `planner` produce el spec, el `builder` ejecuta tarea por tarea, y el `git` hace commit por wave.
+
+Ver [Recorrido de discovery → Escenario 1](#escenario-1--proyecto-completamente-nuevo) para un ejemplo paso a paso.
 
 ---
 
-### B. Proyecto con avance (brownfield)
+### B. Proyecto existente (brownfield)
 
-Para un proyecto que ya tiene codigo, tests e historia en produccion.
-El objetivo es **enseñarle al framework lo que ya existe**, no regenerarlo.
+Para un proyecto que ya tiene código, tests e historia en producción. El objetivo es enseñarle al framework lo que ya existe, no regenerarlo.
 
 ```bash
-# 1. Desde la raiz del proyecto
+# 1. Desde la raíz del proyecto
 cp -r /ruta/a/claude-code-orquesta/.claude ./.claude
 
-# 2. Agregar settings.local al gitignore (opcional)
+# 2. Agregar settings local al .gitignore (opcional)
 echo ".claude/settings.local.json" >> .gitignore
 
 # 3. Abrir Claude Code en el repo
 claude
 ```
 
-Pedile a Claude que **descubra** lo que ya existe en lugar de inventarlo:
+Dos sub-caminos según qué documentación de diseño exista:
 
-```
-Este es un proyecto existente. Configura .claude/ leyendo el codigo, no adivinando.
-
-Pasos:
-1. Corre /init para escanear el repo y detectar comandos build/test/lint.
-2. Llena stack.yml desde package.json / pyproject.toml / Dockerfile.
-   - Detecta exec_prefix (Docker? bare metal?)
-   - Detecta comandos test, lint, type_check, build, dev
-   - Detecta fuente de schema (Prisma? migraciones? SQL plano?) y configura schema.paths
-3. Llena project.yml:
-   - Inferi entidades de dominio desde src/models/ o el schema de DB
-   - Inferi estrategia multi-tenant desde queries existentes (busca columnas tenant_id / org_id)
-   - Agrega gate_protected_areas para migrations/, auth/, payment/, y cualquier directorio sensible
-4. Llena memory/architecture.md desde la estructura real de src/.
-   Referenciando archivos reales, no aspiracionales.
-5. Corre /sync-schema para poblar memory/schema.md desde los modelos reales.
-6. Pausa para revision. Mostrame el diff antes de continuar.
-```
-
-Notas importantes para brownfield:
-- **No dejes que Claude reescriba tu codigo** durante el setup. El setup solo edita `.claude/`.
-- **Elegi un primer feature de bajo riesgo** para validar el workflow:
-  ```bash
-  /feature Refactorizar tokens de auth para usar la nueva tabla de sesiones
-  ```
-- **Endurece `gate_protected_areas`** para cualquier zona que no quieras auto-editable (auth, billing, infra). El hook `gate-check.sh` forzara confirmacion.
-- **Tu CI/CD se queda como esta.** El framework agrega chequeos, no reemplaza tu pipeline.
-
----
-
-### Discovery: construi el diseño antes del codigo
-
-`/discovery` es un pipeline conversacional que produce `docs/` (FRs, casos de uso, C4, ADRs)
-*antes* de invocar `/feature`. Cada fase itera con vos hasta que digas "ok", y la
-fase 7 (`/discovery-intake`) siembra `.claude/` desde los docs aprobados.
-
-```bash
-/discovery                       # auto-detecta modo, empieza en la primera fase no-completa
-/discovery functional            # salta a fase 2 (Requisitos Funcionales)
-/discovery review --deep         # re-audita fases completas contra el codigo actual
-/discovery resume                # retoma fase interrumpida desde state file
-```
-
-| # | Fase | Output |
-|---|------|--------|
-| 1 | `/discovery-vision` | `docs/glossary.md` + resumen de vision |
-| 2 | `/discovery-functional` | `docs/requirements/functional.md` |
-| 3 | `/discovery-use-cases` | `docs/use-cases/UC-*.md` |
-| 4 | `/discovery-nfr` | `docs/requirements/non-functional.md` |
-| 5 | `/discovery-architecture` | `docs/architecture/c4-*.md` |
-| 6 | `/discovery-decisions` | `docs/decisions/ADR-*.md` |
-| 7 | `/discovery-intake` | poblar `.claude/` desde `docs/` |
-
-Cada fase auto-detecta el modo segun lo que exista en `docs/`:
-
-- **greenfield** — sin docs → Q&A conversacional crea la primera version
-- **review** — docs existen pero con issues → auditoria (completitud / consistencia / drift) → iterar
-- **ingest** — docs completos y frescos → confirmar y avanzar
-
-Usa `/discovery` en proyectos nuevos, o en proyectos existentes cuya doc
-necesita revision antes de alimentar a Orquesta.
-
-#### Como usar /discovery
-
-**Escenario 1 — Proyecto nuevo, construir el diseño desde cero**
-
-```bash
-mkdir mi-saas && cd mi-saas
-git init
-cp -r /ruta/a/claude-code-orquesta/.claude ./.claude
-claude
-```
-
-Despues en Claude Code:
-
-```
-> /discovery
-```
-
-Que pasa:
-
-1. La skill arma `docs/` y `docs/.discovery-state.md`.
-2. Detecta que todas las fases son greenfield. Empieza en **fase 1 (Vision)**.
-3. El planner hace 1-3 preguntas focalizadas por turno — nunca te dispara un draft completo.
-4. Vos respondes, planner propone draft, vos redirigis, planner itera.
-5. Cuando decis `ok`, escribe el archivo y avanza a la fase 2.
-6. Repetis a traves de las fases 2-6.
-7. Fase 7 (`/discovery-intake`) muestra el diff propuesto para `.claude/` y escribe solo con tu aprobacion.
-8. Despues del intake, el planner sugiere `/feature Bootstrap del proyecto segun el plan C4`.
-
-Un discovery completo desde cero suele llevar 2-4 sesiones. Podes pausar en cualquier momento:
-
-```
-> pause
-```
-
-El estado se guarda. Retomas con `/discovery resume`.
-
-**Escenario 2 — Docs existentes, revisarlos antes de alimentar a Orquesta**
-
-Si ya escribiste requisitos / casos de uso / C4 / ADRs (en Notion, Confluence,
-markdown), copialos a `docs/` siguiendo la convencion:
-
-```
-docs/
-├── glossary.md
-├── requirements/{functional,non-functional}.md
-├── use-cases/UC-*.md
-├── architecture/c4-{context,container,component}.md
-└── decisions/ADR-*.md
-```
-
-Despues:
+**B.1 — Ya hay docs de diseño** (en Notion, Confluence, markdown). Copiar a `docs/` siguiendo la convención de [Estructura](#estructura) y luego ejecutar:
 
 ```
 > /discovery review --deep
 ```
 
-El planner audita cada artefacto con tres lentes (completitud, consistencia
-interna, drift con el codigo) y presenta los hallazgos:
+El planner audita cada artefacto (completitud, consistencia interna, drift con el código real) y recorre los issues uno por uno. Cuando todo está limpio, `/discovery-intake` siembra `.claude/`.
+
+**B.2 — No hay docs de diseño todavía.** Ejecutar `/discovery` y responder según lo que el código actual hace:
+
+```
+> /discovery
+```
+
+En modo greenfield el planner hace preguntas abiertas; para un proyecto existente, también puede inferir respuestas desde el código (entidades desde `src/models/`, contenedores desde directorios top-level, dependencias desde `package.json`) y pedir confirmación. Eso produce docs que reflejan la realidad antes de entrar a `.claude/`.
+
+Ver [Recorrido de discovery → Escenario 2](#escenario-2--docs-existentes-que-requieren-revisión).
+
+**Notas importantes para brownfield:**
+- **Discovery nunca edita `src/`.** Solo `docs/` y (después del intake) `.claude/`.
+- **Elegir una primera feature de bajo riesgo** para validar el workflow:
+  ```bash
+  /feature Refactorizar tokens de auth para usar la nueva tabla de sesiones
+  ```
+- **Endurecer `gate_protected_areas`** para cualquier área que no debe auto-editarse (auth, billing, infra). El hook `gate-check.sh` forzará confirmación.
+- **El CI/CD existente queda igual.** El framework solo agrega chequeos; no reemplaza el pipeline.
+
+---
+
+## Recorrido de discovery
+
+### Escenario 1 — Proyecto completamente nuevo
+
+Después de los pasos 1–4 de [Inicio rápido A](#a-proyecto-nuevo-desde-cero):
+
+```
+> /discovery
+```
+
+Qué pasa:
+
+1. La skill prepara `docs/` y `docs/.discovery-state.md`.
+2. Detecta que todas las fases son greenfield. Empieza en la **fase 1 (Visión)**.
+3. El planner hace 1–3 preguntas focalizadas por turno — nunca dispara un draft completo de entrada.
+4. El usuario responde; el planner propone un draft; el usuario lo redirige; el planner itera.
+5. Cuando se confirma con `ok`, se escribe el archivo y se avanza a la fase 2.
+6. Se repite a través de las fases 2–6.
+7. La fase 7 (`/discovery-intake`) muestra el diff propuesto para `.claude/` y solo escribe con aprobación explícita.
+8. Después del intake, el planner sugiere `/feature Bootstrap del scaffold según el plan C4`.
+
+Un discovery completo desde cero suele tomar 2–4 sesiones. Se puede pausar en cualquier momento:
+
+```
+> pause
+```
+
+El estado se guarda. Se retoma con `/discovery resume`.
+
+### Escenario 2 — Docs existentes que requieren revisión
+
+Si ya existen requisitos, casos de uso, C4 o ADRs (en cualquier formato), copiar a `docs/` siguiendo la convención de [Estructura](#estructura), y luego:
+
+```
+> /discovery review --deep
+```
+
+El planner audita cada artefacto con tres lentes (completitud, consistencia interna, drift con el código) y presenta los hallazgos:
 
 ```
 PHASE 5 — Architecture (Review)
 ✅ c4-context.md — sin issues
 ⚠️ c4-container.md — 2 issues:
-   - El container "PaymentService" no aparece en src/, ¿deprecated?
+   - Container "PaymentService" no está en src/, ¿deprecated?
    - Falta "NotificationWorker" (visto en src/workers/notify.ts)
 ❌ c4-component.md — no existe, recomendado para src/api/
 
-Discutir en orden, o elegir uno (1/2/3)?
+¿Discutir en orden, o elegir uno (1/2/3)?
 ```
 
-Discutis un issue por vez. Cada issue resuelto actualiza la doc y el state file.
-Cuando todas las fases estan limpias, corre `/discovery-intake` para sembrar `.claude/`.
+Se discute un issue a la vez. Cada issue resuelto actualiza la doc y el state file. Cuando todas las fases están limpias, `/discovery-intake` siembra `.claude/`.
 
-**Escenario 3 — Trabajar una sola fase**
+### Escenario 3 — Trabajar una sola fase
 
-No tenes que correr todo el pipeline. Cada fase es una skill standalone:
+No hace falta correr el pipeline completo. Cada fase es una skill standalone:
 
 ```
 > /discovery-functional        # solo requisitos
@@ -312,51 +303,56 @@ No tenes que correr todo el pipeline. Cada fase es una skill standalone:
 > /discovery-decisions         # solo ADRs
 ```
 
-Util cuando ya tenes un setup parcial y queres evolucionar una sola pieza.
-Las fases declaran sus dependencias — si editas FRs (fase 2), las fases 3 y 5
-quedan marcadas `partial` para que recuerdes re-revisarlas despues.
+Útil cuando ya hay un setup parcial y solo se quiere evolucionar una pieza. Las fases declaran sus dependencias — al editar FRs (fase 2), las fases 3 y 5 quedan marcadas como `partial` para recordar revisarlas después.
 
-#### Reglas que el planner respeta
+### Reglas que el planner respeta
 
-- **Nada de generacion silenciosa.** Toda escritura de doc se muestra como diff
-  primero; solo se escribe con un `ok` explicito.
-- **Turnos chicos.** 1-3 preguntas por turno, nunca un cuestionario de 30 preguntas.
-- **Review anclado en evidencia.** Cada issue cita un archivo/linea, no hand-waving.
+- **Nada de generación silenciosa.** Toda escritura de doc se muestra como diff primero; solo se persiste con `ok` explícito.
+- **Turnos chicos.** 1–3 preguntas por turno, nunca un cuestionario de 30 preguntas.
+- **Review anclado en evidencia.** Cada issue cita un archivo o línea; nada de afirmaciones vagas.
 - **Discovery nunca edita `src/`.** Solo `docs/` y `.discovery-state.md` hasta el intake.
 
 ---
 
-### Comandos comunes
+## Comandos comunes
 
 ```bash
-/feature Agregar registro de usuarios con verificacion por email   # texto libre → crea issue
-/feature #42                                                       # issue existente
-/qa-test                                                           # QA completo (unit + E2E)
+# Etapa 1 — diseño
+/discovery                                                # pipeline completo (auto-modo)
+/discovery review --deep                                  # re-auditar todas las fases vs código
+/discovery <fase>                                         # saltar a una fase específica
+/discovery resume                                         # retomar fase interrumpida
+
+# Etapa 2 — construcción
+/feature Agregar registro de usuarios con verificación    # texto libre → crea issue
+/feature #42                                              # issue existente
+/qa-test                                                  # QA completo (unit + E2E)
 /research Comparar Redis vs Memcached
-/audit src/auth                                                    # auditoria de seguridad por path
-/sync-schema                                                       # forzar sync del modelo de datos
-/prepare-commit                                                    # validar readiness + draft de commit
+/audit src/auth                                           # auditoría de seguridad por path
+/sync-schema                                              # forzar sync del modelo de datos
+/prepare-commit                                           # validar readiness + draft de commit
 ```
 
 ---
 
-## Que Editar por Proyecto
+## Qué editar por proyecto
 
-| Archivo | Que poner | Cuando |
+| Archivo | Qué poner | Cuándo |
 |---------|-----------|--------|
-| `project.yml` | Dominio, invariantes, flujos criticos | Setup |
-| `stack.yml` | Comandos de runtime, paths, config de schema | Setup |
-| `memory/architecture.md` | Diseno del sistema, roles, patrones | Setup + evoluciona |
+| `project.yml` | Dominio, invariantes, flujos críticos, áreas gate-protected | Setup (o auto-poblado por `/discovery-intake`) |
+| `stack.yml` | Comandos de runtime, paths, config de schema, override opcional `docs:` | Setup |
+| `memory/architecture.md` | Diseño del sistema, roles, patrones | Setup (o auto-poblado por `/discovery-intake`) |
+| `docs/**` | Visión, requisitos, casos de uso, C4, ADRs | Continuamente, mediante `/discovery` |
 
-El resto es generico — agents, skills y CLAUDE.md no se editan.
+Todo lo demás es genérico — agentes, skills, hooks, rules y CLAUDE.md no se editan por proyecto.
 
 <details>
-<summary>Ejemplos de configuracion manual</summary>
+<summary>Ejemplos de configuración manual</summary>
 
 **project.yml:**
 ```yaml
 name: MiSaaS
-description: Plataforma de gestion de inventarios
+description: Plataforma de gestión de inventarios
 domain:
   language: es
   entities: [organization (tenant), user, warehouse, product, order]
@@ -396,7 +392,7 @@ schema:
 # .claude/agents/mi-agent.md
 ---
 name: mi-agent
-description: Cuando invocar este agent.
+description: Cuándo invocar este agent.
 model: sonnet              # opus | sonnet | haiku
 tools: [Read, Grep, Bash]  # allowlist
 disallowedTools: [Write]   # denylist (camelCase — requerido por Claude Code)
@@ -414,7 +410,7 @@ Instrucciones del rol.
 # .claude/skills/mi-skill/SKILL.md
 ---
 name: mi-skill
-description: Que hace esta skill.
+description: Qué hace esta skill.
 user-invocable: true
 ---
 # /mi-skill
@@ -434,7 +430,7 @@ database:
 
 ---
 
-## Herramientas Recomendadas
+## Herramientas recomendadas
 
 **[Claude Code Templates](https://github.com/davila7/claude-code-templates)** de **davila7** — el Analytics Dashboard (`npx claude-code-templates --analytics`) visualiza la actividad de los agentes y el uso de tokens.
 
@@ -442,4 +438,4 @@ database:
 
 ## Licencia
 
-Licencia MIT. Ver [LICENSE](LICENSE) para mas detalles.
+Licencia MIT. Ver [LICENSE](LICENSE) para más detalles.
