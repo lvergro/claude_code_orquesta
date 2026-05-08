@@ -84,6 +84,15 @@ conventions:
 #   # source: sql
 #   # paths: [schema.sql]
 
+# Optional: Discovery docs root — used by /discovery skills
+# Defaults to docs/ if commented out.
+# docs:
+#   root: docs/
+#   requirements: docs/requirements/
+#   use_cases: docs/use-cases/
+#   architecture: docs/architecture/
+#   decisions: docs/decisions/
+
 # Optional: Database inspection
 # If a database MCP is configured, the planner agent can query the real schema
 # instead of relying on documentation that may be outdated.

@@ -197,6 +197,135 @@ Important notes for brownfield:
 
 ---
 
+### Discovery: build the design before the code
+
+`/discovery` is a conversational pipeline that produces `docs/` (FRs, use cases, C4, ADRs)
+*before* `/feature` is invoked. Each phase iterates with you until you say "ok", then
+phase 7 (`/discovery-intake`) seeds `.claude/` from the approved docs.
+
+```bash
+/discovery                       # auto-detect mode, start at first non-complete phase
+/discovery functional            # jump to phase 2 (Functional Requirements)
+/discovery review --deep         # re-audit completed phases against current code
+/discovery resume                # continue interrupted phase from state file
+```
+
+| # | Phase | Output |
+|---|-------|--------|
+| 1 | `/discovery-vision` | `docs/glossary.md` + vision summary |
+| 2 | `/discovery-functional` | `docs/requirements/functional.md` |
+| 3 | `/discovery-use-cases` | `docs/use-cases/UC-*.md` |
+| 4 | `/discovery-nfr` | `docs/requirements/non-functional.md` |
+| 5 | `/discovery-architecture` | `docs/architecture/c4-*.md` |
+| 6 | `/discovery-decisions` | `docs/decisions/ADR-*.md` |
+| 7 | `/discovery-intake` | populates `.claude/` from `docs/` |
+
+Each phase auto-detects mode based on existing `docs/`:
+
+- **greenfield** — no docs yet → conversational Q&A drafts the first version
+- **review** — docs exist but flagged for issues → audit (completeness / consistency / drift) → iterate
+- **ingest** — docs complete and fresh → confirm and advance
+
+Use `/discovery` for greenfield projects, or for existing projects where the docs
+need a refresh before pointing Orquesta at them.
+
+#### How to use /discovery
+
+**Scenario 1 — Brand new project, build the design from zero**
+
+```bash
+mkdir my-saas && cd my-saas
+git init
+cp -r /path/to/claude-code-orquesta/.claude ./.claude
+claude
+```
+
+Then in Claude Code:
+
+```
+> /discovery
+```
+
+What happens:
+
+1. Skill bootstraps `docs/` and `docs/.discovery-state.md`.
+2. Detects every phase is greenfield. Starts at **phase 1 (Vision)**.
+3. Planner asks 1-3 focused questions per turn — never dumps a full draft on you.
+4. You answer, planner proposes a draft, you redirect, planner iterates.
+5. When you say `ok`, the file is written and you advance to phase 2.
+6. Repeat through phases 2-6.
+7. Phase 7 (`/discovery-intake`) shows the proposed diff for `.claude/` and writes only on your approval.
+8. After intake, the planner suggests `/feature Bootstrap project scaffold per the C4 plan`.
+
+A full discovery from zero typically takes 2-4 sessions. You can pause at any time:
+
+```
+> pause
+```
+
+State is saved. Resume with `/discovery resume`.
+
+**Scenario 2 — Existing docs, review them before feeding Orquesta**
+
+If you already wrote requirements / use cases / C4 / ADRs (in Notion, Confluence,
+markdown files), drop them into `docs/` matching the convention:
+
+```
+docs/
+├── glossary.md
+├── requirements/{functional,non-functional}.md
+├── use-cases/UC-*.md
+├── architecture/c4-{context,container,component}.md
+└── decisions/ADR-*.md
+```
+
+Then:
+
+```
+> /discovery review --deep
+```
+
+The planner audits each artifact through three lenses (completeness, internal
+consistency, drift with code) and presents findings:
+
+```
+PHASE 5 — Architecture (Review)
+✅ c4-context.md — no issues
+⚠️ c4-container.md — 2 issues:
+   - Container "PaymentService" not found in src/, deprecated?
+   - Missing "NotificationWorker" (seen in src/workers/notify.ts)
+❌ c4-component.md — missing, recommended for src/api/
+
+Discuss in order, or pick one (1/2/3)?
+```
+
+You discuss one issue at a time. Each resolved issue updates the doc and the
+state file. When all phases are clean, run `/discovery-intake` to seed `.claude/`.
+
+**Scenario 3 — Work on a single phase**
+
+You don't have to run the whole pipeline. Each phase is a standalone skill:
+
+```
+> /discovery-functional        # only requirements
+> /discovery-architecture      # only C4
+> /discovery-decisions         # only ADRs
+```
+
+Useful when you already have a partial setup and just want to evolve one piece.
+Phases declare their dependencies — if you edit FRs (phase 2), phases 3 and 5
+are flagged as `partial` so you remember to re-review them later.
+
+#### Behavior rules the planner follows
+
+- **No silent generation.** Every doc write is shown as a diff first; only
+  written on explicit `ok`.
+- **Small turns.** 1-3 questions per turn, never a 30-question questionnaire.
+- **Evidence-anchored review.** Every issue cites a file/line, not vague hand-waving.
+- **Discovery never edits `src/`.** Only `docs/` and `.discovery-state.md` until intake.
+
+---
+
 ### Common commands
 
 ```bash
