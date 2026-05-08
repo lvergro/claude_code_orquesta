@@ -88,8 +88,9 @@ gh issue create --title "TITLE" --body "BODY"
 
 1. Invoke **planner agent** (model: opus) with context:
    - Issue body (title + description)
-   - `.claude/memory/architecture.md`
-   - `.claude/memory/decisions/DEC-*.md`
+   - `.claude/memory/architecture.md` (compact summary)
+   - `docs/decisions/ADR-*.md` (canonical ADRs — pick the relevant ones)
+   - If FR_CONTEXT is set: the FR markdown block from `docs/requirements/functional.md`.
    - `.claude/project.yml`
 
 2. Planner produces structured spec:

@@ -47,7 +47,7 @@ A conversational pipeline driven by the `planner` that produces design artifacts
 | 4 | `/discovery-nfr` | `docs/requirements/non-functional.md` |
 | 5 | `/discovery-architecture` | `docs/architecture/c4-*.md` (Context, Container, Component) |
 | 6 | `/discovery-decisions` | `docs/decisions/ADR-*.md` |
-| 7 | `/discovery-intake` | populates `.claude/project.yml` + `memory/architecture.md` + `memory/decisions/` from `docs/` |
+| 7 | `/discovery-intake` | derives compact runtime artifacts (`.claude/project.yml`, `memory/architecture.md` summary, `memory/requirements.md` index) from `docs/`. ADRs stay in `docs/decisions/`. |
 
 Each phase auto-detects mode based on the existing `docs/`:
 
@@ -139,13 +139,14 @@ Parallel features? Multiple terminals, each with a different `/feature #N`. Each
 │   ├── analyze-architecture/SKILL.md   #   Drift detection
 │   └── archive-state/SKILL.md          #   State lifecycle
 │
-└── memory/                             # Persistent state — sources of truth across sessions
-    ├── architecture.md                 #   System design (populated by /discovery-intake)
+└── memory/                             # Compact runtime state — derived from docs/, not duplicated
+    ├── architecture.md                 #   Executive summary, ~30 lines (full C4 lives in docs/architecture/)
+    ├── requirements.md                 #   FR↔UC index (one line per FR)
     ├── schema.md                       #   Data model (auto-synced from stack.yml)
     ├── project-state.md                #   Active tasks + Current Focus + Blockers
     ├── research.md                     #   Research log
-    ├── decisions/                      #   ADRs as DEC-*.md (mirrored from docs/decisions/)
     └── archive/                        #   Completed states
+                                        #   (no decisions/ — ADRs read directly from docs/decisions/)
 ```
 
 The `/discovery` pipeline also creates a `docs/` tree at the repository root:

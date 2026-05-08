@@ -47,7 +47,7 @@ Pipeline conversacional dirigido por el `planner` que produce artefactos de dise
 | 4 | `/discovery-nfr` | `docs/requirements/non-functional.md` |
 | 5 | `/discovery-architecture` | `docs/architecture/c4-*.md` (Context, Container, Component) |
 | 6 | `/discovery-decisions` | `docs/decisions/ADR-*.md` |
-| 7 | `/discovery-intake` | poblar `.claude/project.yml` + `memory/architecture.md` + `memory/decisions/` desde `docs/` |
+| 7 | `/discovery-intake` | deriva artefactos compactos de runtime (`.claude/project.yml`, resumen `memory/architecture.md`, índice `memory/requirements.md`) desde `docs/`. Los ADRs quedan en `docs/decisions/`. |
 
 Cada fase autodetecta el modo según el estado de `docs/`:
 
@@ -139,13 +139,14 @@ PHASE 6 → Cleanup (archivar estado)
 │   ├── analyze-architecture/SKILL.md   #   Detección de drift
 │   └── archive-state/SKILL.md          #   Ciclo de vida del estado
 │
-└── memory/                             # Estado persistente — fuentes de verdad cross-sesión
-    ├── architecture.md                 #   Diseño del sistema (poblado por /discovery-intake)
+└── memory/                             # Estado runtime compacto — derivado de docs/, sin duplicar
+    ├── architecture.md                 #   Resumen ejecutivo, ~30 líneas (C4 completo en docs/architecture/)
+    ├── requirements.md                 #   Índice FR↔UC (una línea por FR)
     ├── schema.md                       #   Modelo de datos (auto-sync desde stack.yml)
     ├── project-state.md                #   Tareas activas + Current Focus + Blockers
     ├── research.md                     #   Log de investigación
-    ├── decisions/                      #   ADRs como DEC-*.md (espejados desde docs/decisions/)
     └── archive/                        #   Estados completados
+                                        #   (sin decisions/ — los ADRs se leen directo desde docs/decisions/)
 ```
 
 El pipeline `/discovery` también crea un árbol `docs/` en la raíz del repositorio:

@@ -8,11 +8,13 @@
 1. This file → 2. `.claude/memory/architecture.md` → 3. Code & Tests.
 
 ## Memory (sources of truth — never rely on chat history)
-- Architecture: `.claude/memory/architecture.md`
+- Architecture summary: `.claude/memory/architecture.md` (compact — full C4 in `docs/architecture/`)
 - State: `.claude/memory/project-state.md`
 - Research: `.claude/memory/research.md`
 - Schema: `.claude/memory/schema.md` (auto-synced, on-demand read)
-- Decisions: `.claude/memory/decisions/DEC-*.md`
+- Decisions (ADRs): `docs/decisions/ADR-*.md`
+- Requirements index: `.claude/memory/requirements.md` (FR↔UC map)
+- Full design (FRs, UCs, NFRs, C4): `docs/`
 
 ## Invariants
 Read invariants from `project.yml` (loaded above). STOP if any is violated.

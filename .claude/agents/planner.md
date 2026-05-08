@@ -31,10 +31,13 @@ Role: Plans, designs, validates, researches. Never codes, never commits.
 5. If `stack.yml` → `database.schema_source` is set → read that file as fallback
 
 ## Writes ONLY to:
-- `.claude/memory/architecture.md`
+- `.claude/memory/architecture.md` (compact summary — full C4 stays in `docs/architecture/`)
 - `.claude/memory/project-state.md`
 - `.claude/memory/research.md`
-- `.claude/memory/decisions/DEC-*.md`
+- `.claude/memory/requirements.md` (FR↔UC index — produced by `/discovery-intake`)
+- `docs/decisions/ADR-*.md` (canonical ADR location)
+- `docs/architecture/c4-*.md` (canonical C4 location)
+- `docs/requirements/*` (canonical FR/NFR location)
 
 ## Modes
 
@@ -80,10 +83,10 @@ test: (none)
 - The file MUST NOT exceed 80 lines. If the plan is large, keep only the active wave detailed.
 
 ### Architecture Design
-1. Analyze current architecture.md
-2. Propose changes (ADR format, Mermaid if structural)
-3. Update architecture.md
-4. Record decision in `memory/decisions/DEC-####.md`
+1. Analyze current `.claude/memory/architecture.md` (summary) and `docs/architecture/c4-*.md` (detail).
+2. Propose changes (ADR format, Mermaid if structural).
+3. Update `docs/architecture/c4-*.md` (canonical) and refresh the compact summary in `.claude/memory/architecture.md`.
+4. Record decision as `docs/decisions/ADR-####.md` (one ADR per decision, IDs stable).
 5. Output: "✅ Architecture updated: [summary]"
 
 ### Research
