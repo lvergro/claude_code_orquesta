@@ -86,6 +86,66 @@ Phase 7. Bridges `docs/` (human source of truth) to `.claude/` (Orquesta runtime
 
 ---
 
+## phase 8 — sync FRs to tracker (optional)
+
+After the `.claude/` writes succeed, check `stack.yml → tracker.type`.
+
+- Not set, `none`, or section missing → skip silently. Done.
+- `linear` → run Linear sync (below).
+- `github` → run GitHub sync (TODO — not implemented yet; skip with notice).
+
+### Linear sync (hybrid model)
+
+Goal: every approved FR in `docs/requirements/functional.md` exists in Linear as a
+**parent issue** with the FR's design content as description. This makes Linear
+the runtime tracker for state (status, assignee, sprint) while `docs/` stays the
+canonical design source.
+
+Requires the Linear MCP server (e.g. `linear-server`) to be configured. The
+calling session must have `mcp__linear-server__*` tools available — discovery-intake
+runs in the main session, so the user's permissions apply.
+
+Steps:
+
+1. **Resolve team:** read `stack.yml → tracker.linear.team_id`.
+   - If empty, call `mcp__linear-server__list_teams()` and ask the user to pick.
+     Persist the chosen `team_id` back into `stack.yml`.
+2. **Ensure label:** read `stack.yml → tracker.linear.fr_label` (default `fr`).
+   - Check the team's labels; create the label if missing (one-time setup).
+3. **For each FR in `docs/requirements/functional.md`:**
+   - Title: `[FR-N] <FR title>`
+   - Description: the full FR markdown block (Actor, Trigger, Outcome, Verifiable by).
+   - Labels: `[fr_label]`
+   - **Lookup first:** search Linear for an issue with the same title prefix `[FR-N]`.
+     - Found → call `mcp__linear-server__save_issue(id, title, description, labels)` to update.
+     - Not found → call `mcp__linear-server__save_issue(title, description, teamId, labels)` to create.
+   - **Idempotent:** skip update if description hash matches the doc's content hash
+     (write hash into a small index file: `docs/.tracker-sync.md`).
+4. **Detect orphans:** Linear issues with the `fr` label whose `[FR-N]` ID is not
+   present in `docs/requirements/functional.md`. Print as a warning:
+   ```
+   ⚠️ Linear issue [FR-08] exists but is not in docs. Manually triage:
+      - rename to remove the FR-N prefix, or
+      - add FR-08 back to docs/requirements/functional.md
+   ```
+5. **Update state file:** `docs/.discovery-state.md` adds:
+   ```
+   ## phase_8_tracker_sync
+   tracker: linear
+   last_synced: <today>
+   fr_synced: <N>
+   fr_orphans: <N>
+   ```
+
+### Failure handling
+
+- MCP not available / tool errors → print warning, continue. The intake still
+  succeeds; only the tracker sync is skipped. The user can retry by re-running
+  `/discovery-intake` after fixing the MCP setup.
+- Network failures → same. Sync is best-effort, not blocking.
+
+---
+
 ## post-intake
 
 Print:
@@ -94,6 +154,7 @@ Print:
 
 Next steps:
   /sync-schema           # if you have a database schema, populate memory/schema.md
+  /feature FR-01         # implement the first FR (linked to its Linear parent)
   /feature <description> # start your first feature
 ```
 

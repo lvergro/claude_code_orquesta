@@ -84,6 +84,20 @@ conventions:
 #   # source: sql
 #   # paths: [schema.sql]
 
+# Optional: Issue tracker integration — used by /discovery-intake (FR sync)
+# and /feature (issue lookup/create). Hybrid model: design lives in docs/,
+# state lives in the tracker.
+# tracker:
+#   type: linear                         # linear | github | none
+#   # Linear-specific (requires Linear MCP server, e.g. linear-server):
+#   linear:
+#     team_id: ""                        # set after first /discovery-intake run
+#     fr_label: fr                       # label applied to parent FR issues
+#     issue_prefix: ""                   # e.g. "MI-" or "SEC-" — auto-derived if empty
+#   # GitHub-specific:
+#   # github:
+#   #   repo: owner/name                 # defaults to git remote
+
 # Optional: Discovery docs root — used by /discovery skills
 # Defaults to docs/ if commented out.
 # docs:

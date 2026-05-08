@@ -57,6 +57,18 @@ Each phase auto-detects mode based on the existing `docs/`:
 
 The deep walkthrough (with example sessions for each scenario) is in [Discovery walkthrough](#discovery-walkthrough) below.
 
+#### Hybrid model: design in `docs/`, state in your tracker
+
+When a project configures `stack.yml → tracker.type: linear` (or another supported tracker), `/discovery-intake` mirrors each approved FR as a **parent issue** in the tracker. Then `/feature FR-01` creates a child sub-issue under that parent, links it to the worktree, and PRs close it on merge.
+
+| Layer | Lives in | Owner |
+|-------|----------|-------|
+| FR design (what, actor, criteria) | `docs/requirements/functional.md` | `/discovery-functional` (human approval) |
+| FR state (pending / in progress / shipped) | Linear (or other tracker) — parent issue per FR | `/discovery-intake` syncs; PRs close children |
+| Implementation (the actual feature) | Tracker child issue + worktree + PR | `/feature FR-N` |
+
+If you do not configure a tracker, `/discovery-intake` skips the sync silently and `/feature` still works with free-text or GitHub issues.
+
 ### Stage 2 — `/feature` (build)
 
 Once `.claude/` is seeded, every feature follows a single pipeline:

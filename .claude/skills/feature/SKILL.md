@@ -25,6 +25,14 @@ Input: `#42`, `42`, issue URL, or free-text description.
 2. Parse input:
    - Number or `#N` → ISSUE = N
    - URL `https://github.com/.../issues/N` → extract N
+   - **`FR-\d+` (or free text containing `(FR-\d+)`)** → set FR_ID and read
+     `docs/requirements/functional.md`. Extract that FR's full block (Actor,
+     Trigger, Outcome, Verifiable by) into FR_CONTEXT. The planner uses this
+     as built-in acceptance criteria during Phase 2 (Spec). If the project has
+     `stack.yml → tracker.type: linear` and a parent issue exists in Linear with
+     title prefix `[FR-N]`, set PARENT_LINEAR_ID; the issue created in Phase 1
+     becomes a child of that parent. If `docs/requirements/functional.md` does
+     not contain FR_ID, abort with `❌ Error: FR-N not found in docs. Run /discovery-functional first.`
    - Free text → will create issue in Phase 1
 
 3. Verify GitHub CLI auth:
