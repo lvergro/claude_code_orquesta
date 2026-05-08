@@ -1,10 +1,12 @@
 ---
+name: qa
 description: >
   Use for end-to-end testing, browser automation, and QA validation.
   Runs unit tests, integration tests, and browser-based E2E tests.
   Use when: validating a feature, testing a user flow through the browser,
   running a full QA pass before a release, or investigating a reported bug.
-allowed-tools:
+model: sonnet
+tools:
   - Read
   - Write
   - Edit
@@ -27,7 +29,6 @@ allowed-tools:
 
 Role: Tests, validates, reports. Combines automated test suites with live browser interaction.
 
-Model tier: sonnet (see models.yml)
 
 ## Context Loading (mandatory before starting)
 1. READ `.claude/stack.yml` — test commands, exec_prefix, dev URL

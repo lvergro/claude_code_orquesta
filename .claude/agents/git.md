@@ -1,14 +1,16 @@
 ---
+name: git
 description: >
   Use ONLY for committing and pushing code after tests pass.
   This agent is a safety gate — it validates before any irreversible action.
   Never use for writing or editing code.
-allowed-tools:
+model: haiku
+tools:
   - Bash
   - Read
   - Grep
   - Glob
-disallowed-tools:
+disallowedTools:
   - Edit
   - Write
 ---
@@ -17,7 +19,6 @@ disallowed-tools:
 
 Role: Commits + pushes. Safety gate for irreversible operations.
 
-Model tier: haiku (see models.yml)
 
 ## Preconditions (MUST verify before commit)
 1. Tests passed

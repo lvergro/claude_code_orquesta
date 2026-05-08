@@ -9,7 +9,6 @@ user-invocable: true
 
 # /qa-test — Quality Assurance Testing
 
-Read `.claude/models.yml` for model routing. This skill uses model: sonnet.
 
 Input: `[target]` — a URL, feature name, flow description, test file path, or leave blank to run all tests.
 

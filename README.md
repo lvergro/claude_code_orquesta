@@ -12,14 +12,14 @@ A file-based orchestration system that structures how Claude Code plans, impleme
 
 ## How It Works
 
-Three subagents with constrained tool access, dispatched automatically:
+Four subagents with **enforced** tool access (via `tools` / `disallowedTools` frontmatter), dispatched automatically:
 
 | Agent | Role | Model | Can do | Cannot do |
 |-------|------|-------|--------|-----------|
-| `planner` | Architect + Researcher | opus | Read, analyze, design, write to memory/ | Code, commits, Bash |
-| `builder` | Programmer + QA | sonnet | Write code, tests, execute commands | Edit architecture, commits |
-| `git` | Release Manager | haiku | Commits and push | Write code or edit files |
-| `qa` | QA Validator | sonnet | Run tests, browser automation, generate QA report | Edit source code |
+| `planner` | Architect + Researcher | `opus` | Read, analyze, design, write to memory/ | Bash, code, commits |
+| `builder` | Programmer | `sonnet` | Write code, tests, run commands | Push, force-edit gate-protected areas |
+| `git` | Release Manager | `haiku` | Commits and push | Edit/Write any file |
+| `qa` | QA Validator | `sonnet` | Run tests, browser automation, write reports | (no source-edit restriction yet — by convention) |
 
 One main workflow (`/feature`) orchestrates them through a pipeline:
 
@@ -45,37 +45,46 @@ Parallel features? Multiple terminals, each with a different `/feature #N`. Each
 
 ```
 .claude/
-├── CLAUDE.md                          # Entry point
-├── project.yml                        # WHAT: domain, invariants, critical flows
-├── stack.yml                          # HOW: runtime, commands, paths
-├── models.yml                         # Model routing (haiku/sonnet/opus)
-├── settings.local.json                # Tool permissions
+├── CLAUDE.md                          # Entry point — imports project.yml + stack.yml
+├── project.yml                        # WHAT: domain, invariants, gate-protected areas
+├── stack.yml                          # HOW: runtime, commands, paths, schema source
 │
-├── agents/                            # Subagents (native dispatch)
-│   ├── planner.md
-│   ├── builder.md
-│   ├── git.md
-│   └── qa.md
+├── settings.json                      # Team-shared: permissions (deny/ask), hooks
+├── settings.local.json                # Personal/local: extra allows (gitignored if you want)
 │
-├── skills/                            # Workflows
+├── hooks/                             # Lifecycle hooks (run as shell scripts)
+│   ├── gate-check.sh                  #   PreToolUse Edit|Write — blocks gate_protected_areas
+│   └── session-context.sh             #   SessionStart — injects project-state Current Focus
+│
+├── rules/                             # Path-scoped rules (load only when matching files touched)
+│   ├── migrations.md                  #   paths: migrations/**, prisma/schema.prisma
+│   └── tests.md                       #   paths: **/*.test.*, tests/**
+│
+├── agents/                            # Subagents — model + tools enforced via frontmatter
+│   ├── planner.md                     #   model: opus  — designs, never codes
+│   ├── builder.md                     #   model: sonnet — codes silently
+│   ├── git.md                         #   model: haiku — commits + pushes
+│   └── qa.md                          #   model: sonnet — runs tests + browser E2E
+│
+├── skills/                            # Workflows (slash commands)
 │   ├── feature/SKILL.md               #   /feature — main pipeline
 │   ├── qa-test/SKILL.md               #   /qa-test — E2E QA validation
 │   ├── research/SKILL.md              #   /research — technical investigation
 │   ├── audit/SKILL.md                 #   /audit — security audit
 │   ├── sync-schema/SKILL.md           #   /sync-schema — data model sync
 │   ├── prepare-commit/SKILL.md        #   /prepare-commit
-│   ├── validate-invariants/SKILL.md   #   Safety checks (auto)
-│   ├── summarize-context/SKILL.md     #   Context compression (auto)
-│   ├── write-tests/SKILL.md           #   Test strategy (auto)
-│   ├── analyze-architecture/SKILL.md  #   Drift detection (auto)
-│   └── archive-state/SKILL.md         #   State lifecycle (auto)
+│   ├── validate-invariants/SKILL.md   #   Safety checks
+│   ├── summarize-context/SKILL.md     #   Context compression
+│   ├── write-tests/SKILL.md           #   Test strategy
+│   ├── analyze-architecture/SKILL.md  #   Drift detection
+│   └── archive-state/SKILL.md         #   State lifecycle
 │
-└── memory/                            # Persistent state
-    ├── architecture.md                #   System design (source of truth)
-    ├── schema.md                      #   Data model (auto-synced)
-    ├── project-state.md               #   Active tasks + progress
+└── memory/                            # Persistent state — sources of truth across sessions
+    ├── architecture.md                #   System design
+    ├── schema.md                      #   Data model (auto-synced from stack.yml)
+    ├── project-state.md               #   Active tasks + Current Focus + Blockers
     ├── research.md                    #   Research log
-    ├── decisions/                     #   Architecture decision records
+    ├── decisions/                     #   ADRs (DEC-*.md)
     └── archive/                       #   Completed states
 ```
 
@@ -83,47 +92,121 @@ Parallel features? Multiple terminals, each with a different `/feature #N`. Each
 
 ## Getting Started
 
-### 1. Copy the framework
+Two paths: **A. New project** (greenfield) or **B. Existing project** (brownfield).
+
+### A. New project from scratch
+
+For a project that doesn't exist yet, or one with no production code.
 
 ```bash
-cp -r /path/to/framework/.claude/ ./.claude/
-```
+# 1. Create the project + git repo
+mkdir my-saas && cd my-saas
+git init
 
-### 2. Let Claude configure your project
+# 2. Drop in the framework
+cp -r /path/to/claude-code-orquesta/.claude ./.claude
 
-```bash
+# 3. (Optional) ignore your local-only settings
+echo ".claude/settings.local.json" >> .gitignore
+
+# 4. Open Claude Code
 claude
 ```
 
-```
-Configure this project's .claude/ directory.
-It's a [describe your project — e.g., "multi-tenant SaaS for restaurant management"].
+Then ask Claude to set up the framework with your domain and stack:
 
-Stack: [e.g., "Next.js 14 + Supabase + Prisma, running in Docker"]
-Entities: [e.g., "organizations, users, restaurants, menus, orders"]
-Multi-tenant: [yes/no — e.g., "yes, RLS with org_id column"]
+```
+Configure this project's .claude/ directory for a new project.
+
+Domain: [e.g., "Multi-tenant SaaS for restaurant inventory"]
+Stack: [e.g., "Next.js 14 + Supabase + Prisma, runs in Docker"]
+Entities: [e.g., "organization (tenant), user, restaurant, menu, order"]
+Multi-tenant: [yes — RLS with org_id column / no]
 
 Key invariants:
-- [e.g., "All queries must filter by org_id"]
-- [e.g., "Order totals recalculated server-side"]
+- [e.g., "All DB queries filter by org_id"]
+- [e.g., "Order totals are server-recalculated"]
 
 Critical flows:
-- [e.g., "Order: validate menu → check availability → create order → notify kitchen"]
+- [e.g., "Order: validate menu → check stock → charge → notify kitchen"]
 
-Read project.yml, stack.yml, and memory/architecture.md, then fill them in.
+Gate-protected areas (extra confirmation before edits):
+- migrations/
+- [e.g., src/auth/]
+
+Update project.yml, stack.yml, and memory/architecture.md from this brief.
+Leave skills, agents, hooks, and CLAUDE.md untouched.
 ```
 
-Claude fills in `project.yml`, `stack.yml`, and `architecture.md` aligned to your domain.
-
-### 3. Start building
+Then start your first feature:
 
 ```bash
-/feature Add user registration with email verification
-/feature #42                    # existing issue
-/qa-test                        # full QA pass (unit + E2E)
+/feature Bootstrap the project — Next.js + Supabase + Prisma scaffold
+```
+
+The `planner` agent will produce a spec, the `builder` will execute task-by-task,
+and the `git` agent will commit each wave.
+
+---
+
+### B. Existing project (brownfield)
+
+For a project that already has code, tests, and a production history.
+The goal is to teach the framework what's already there, not regenerate it.
+
+```bash
+# 1. From the project root
+cp -r /path/to/claude-code-orquesta/.claude ./.claude
+
+# 2. Append .claude/settings.local.json to .gitignore (if you want personal allows out of the repo)
+echo ".claude/settings.local.json" >> .gitignore
+
+# 3. Open Claude Code in the repo
+claude
+```
+
+Ask Claude to discover and document what already exists, instead of inventing it:
+
+```
+This is an existing project. Configure .claude/ by reading the codebase, not by guessing.
+
+Steps:
+1. Run /init to scan the repo and capture build/test/lint commands.
+2. Fill stack.yml from package.json / pyproject.toml / Dockerfile.
+   - Detect exec_prefix (Docker? bare metal?)
+   - Detect test, lint, type_check, build, dev commands
+   - Detect schema source (Prisma? migrations? raw SQL?) and set schema.paths
+3. Fill project.yml:
+   - Infer domain entities from src/models/ or db schema
+   - Infer multi-tenant strategy from existing queries (look for tenant_id / org_id columns)
+   - Add gate_protected_areas for migrations/, auth/, payment/, and any directory with sensitive code
+4. Fill memory/architecture.md from the actual layered structure of src/.
+   Reference real files, not aspirational ones.
+5. Run /sync-schema to seed memory/schema.md from real models.
+6. Pause for review. Show me the diff before any further work.
+```
+
+Important notes for brownfield:
+- **Don't let Claude rewrite your code** during setup. Setup only edits `.claude/`.
+- **Pick one feature first**, ideally a low-risk one, to validate the workflow:
+  ```bash
+  /feature Refactor user auth tokens to use the new session table
+  ```
+- **Tighten `gate_protected_areas`** for any area you don't want auto-edited (auth, billing, infra config). The `gate-check.sh` hook will force a confirmation prompt.
+- **Existing CI/CD stays.** The framework only adds checks — it doesn't replace your pipeline.
+
+---
+
+### Common commands
+
+```bash
+/feature Add user registration with email verification   # free-text → creates issue
+/feature #42                                             # existing issue
+/qa-test                                                 # full QA pass (unit + E2E)
 /research Compare Redis vs Memcached
-/audit src/auth
-/sync-schema                    # force data model sync
+/audit src/auth                                          # security audit on a path
+/sync-schema                                             # force data model sync
+/prepare-commit                                          # validate readiness + draft commit msg
 ```
 
 ---
@@ -134,7 +217,6 @@ Claude fills in `project.yml`, `stack.yml`, and `architecture.md` aligned to you
 |------|------------|------|
 | `project.yml` | Domain, invariants, critical flows | Setup |
 | `stack.yml` | Runtime commands, paths, schema config | Setup |
-| `models.yml` | Model routing (haiku/sonnet/opus) | Setup or cost tuning |
 | `memory/architecture.md` | System design, roles, patterns | Setup + evolves |
 
 Everything else is generic — agents, skills, and CLAUDE.md are not edited.
@@ -184,13 +266,18 @@ schema:
 ```yaml
 # .claude/agents/my-agent.md
 ---
+name: my-agent
 description: When to invoke this agent.
-allowed-tools: [Read, Grep, Bash]
-disallowed-tools: [Write]
+model: sonnet              # opus | sonnet | haiku
+tools: [Read, Grep, Bash]  # allowlist
+disallowedTools: [Write]   # denylist (camelCase — required by Claude Code)
 ---
 # My Agent
 Role instructions here.
 ```
+
+> Frontmatter fields follow Claude Code's official subagent spec.
+> `name` is required; `model` and `tools` are enforced by the runtime.
 
 ### Add a skill
 

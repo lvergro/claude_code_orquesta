@@ -8,7 +8,6 @@ user-invocable: true
 
 # /audit — Security Audit
 
-Read `.claude/models.yml` for model routing. This skill uses model: sonnet.
 
 ## scope
 Input: directory path, module name, or blank for full codebase. Examples: `src/auth`, `payments`, `/audit`.

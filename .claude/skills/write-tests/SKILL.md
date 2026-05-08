@@ -8,7 +8,6 @@ user-invocable: true
 
 # /write-tests — Test Strategy
 
-Read `.claude/models.yml` for model routing. This skill uses model: sonnet.
 
 ## context
 - Read `.claude/stack.yml` for test framework and commands

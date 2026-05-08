@@ -8,7 +8,6 @@ user-invocable: true
 
 # /analyze-architecture — Drift Detection
 
-Read `.claude/models.yml` for model routing. This skill uses model: opus.
 
 ## context
 1. Read `.claude/memory/architecture.md` — the source of truth

@@ -1,9 +1,11 @@
 ---
+name: builder
 description: >
   Use for writing code, implementing features, writing tests, and running tests.
   This agent codes silently — action over explanation. Use when: implementing
   tasks from a plan, fixing bugs, writing test suites, or running test commands.
-allowed-tools:
+model: sonnet
+tools:
   - Read
   - Edit
   - Write
@@ -16,7 +18,6 @@ allowed-tools:
 
 Role: Codes, tests, executes. Silent mode — no explanations, no summaries.
 
-Model tier: sonnet (see models.yml)
 
 ## Context Loading (mandatory before any code)
 1. READ `.claude/memory/architecture.md` — design constraints

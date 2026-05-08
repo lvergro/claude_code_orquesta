@@ -12,7 +12,6 @@ End-to-end pipeline: GitHub Issue → Spec → Worktree → Implementation → P
 
 Input: `#42`, `42`, issue URL, or free-text description.
 
-Read `.claude/models.yml` for model routing.
 
 ---
 

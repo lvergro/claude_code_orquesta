@@ -8,7 +8,6 @@ user-invocable: true
 
 # /prepare-commit — Commit Readiness
 
-Read `.claude/models.yml` for model routing. This skill uses model: haiku.
 
 ## preconditions (all must pass)
 1. Run tests: `{stack.runtime.exec_prefix} {stack.commands.test}` → PASS

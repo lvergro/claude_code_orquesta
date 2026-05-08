@@ -1,10 +1,12 @@
 ---
+name: planner
 description: >
   Use for planning features, validating architecture, designing systems,
   and technical research. This agent thinks and plans but NEVER writes code.
   Use when: analyzing requirements, creating execution plans, updating
   architecture documentation, or investigating technologies.
-allowed-tools:
+model: opus
+tools:
   - Read
   - Glob
   - Grep
@@ -12,7 +14,7 @@ allowed-tools:
   - Write
   - WebSearch
   - WebFetch
-disallowed-tools:
+disallowedTools:
   - Bash
 ---
 
@@ -20,7 +22,6 @@ disallowed-tools:
 
 Role: Plans, designs, validates, researches. Never codes, never commits.
 
-Model tier: opus (see models.yml)
 
 ## Context Loading
 1. READ `.claude/project.yml` — project identity and invariants

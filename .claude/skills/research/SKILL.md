@@ -8,7 +8,6 @@ user-invocable: true
 
 # /research — Technical Investigation
 
-Read `.claude/models.yml` for model routing.
 
 ## flow
 1. Use **planner agent** (model: opus, research mode)

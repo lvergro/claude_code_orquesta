@@ -1,9 +1,8 @@
 # CLAUDE.md
 
 ## Project
-READ `.claude/project.yml` for identity, domain, invariants.
-READ `.claude/stack.yml` for ALL runtime commands and exec_prefix.
-READ `.claude/models.yml` for model routing.
+@.claude/project.yml
+@.claude/stack.yml
 
 ## Authority
 1. This file → 2. `.claude/memory/architecture.md` → 3. Code & Tests.
@@ -16,7 +15,7 @@ READ `.claude/models.yml` for model routing.
 - Decisions: `.claude/memory/decisions/DEC-*.md`
 
 ## Invariants
-READ `.claude/project.yml` → `invariants` section. STOP if any is violated.
+Read invariants from `project.yml` (loaded above). STOP if any is violated.
 
 ## Output
 - Do NOT explain before doing. Just do.
