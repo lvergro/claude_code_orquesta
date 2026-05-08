@@ -6,7 +6,7 @@ Sistema basado en archivos que estructura cómo Claude Code **diseña, planifica
 
 **Una feature = un issue = un worktree = una rama = un PR.**
 
-**[Read in English](README.md)** | Disponible para **[Antigravity (Gemini)](antigravity/)**
+**[Read in English](README.md)**
 
 ---
 

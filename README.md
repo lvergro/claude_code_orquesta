@@ -6,7 +6,7 @@ A file-based orchestration system that structures how Claude Code **designs, pla
 
 **One feature = one issue = one worktree = one branch = one PR.**
 
-**[Leer en Español](README_ES.md)** | Also available for **[Antigravity (Gemini)](antigravity/)**
+**[Leer en Español](README_ES.md)**
 
 ---
 
