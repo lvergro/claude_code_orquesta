@@ -203,23 +203,50 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 - Bash commands: `cd WT_ROOT && {command}`
 - State updates: `WT_ROOT/.claude/memory/project-state.md`
 
+**Tracker sync** (if `stack.yml → tracker.type: linear` and LINEAR_ISSUE_ID is set):
+- Phase 4 start → set issue status to **In Progress**
+- Phase 5 step 6 (PR created) → set issue status to **In Review**
+- Phase 6 → set issue status to **Done**
+- Use `gh` or Linear CLI as configured in `stack.yml → tracker.cli`. Skip silently if CLI unavailable.
+
 **For each task `[ ]` in `WT_ROOT/.claude/memory/project-state.md`:**
 
 1. **Builder agent** (model: sonnet) implements + tests
 2. **PASS** → mark `[x]`, print `✅ [task_number] task_description`
-3. **FAIL** → retry (max 2 retries). 3rd failure → post blocker to issue, STOP:
+3. **FAIL** → retry (max 2 retries). 3rd failure → post blocker to issue, write state, STOP:
    ```
    gh issue comment ISSUE --body "Blocked: [task description]. Error: [details]"
    ```
+   Then write to `WT_ROOT/.claude/memory/project-state.md`:
+   ```
+   phase: blocked
+   blocker: [task description] — [error summary]
+   ```
+   Resume: next `/feature #ISSUE` reads `phase: blocked` → prints blocker description → asks user:
+   `"Blocker: [description]. Resolved? (yes/no)"` → YES: set `phase: execution`, continue from first `[ ]` task → NO: STOP.
 
-**After EVERY completed wave, run these 3 steps in order — NO EXCEPTIONS:**
+**After EVERY completed wave, run these 4 steps in order — NO EXCEPTIONS:**
 
 1. **Commit:**
    ```
    cd WT_ROOT && git add -A && git commit -m "feat(SLUG): wave N — [summary]"
    ```
 
-2. **Update Comment 2 (Execution Plan) via `--edit-last`:**
+2. **Rebase check** — detect main divergence before it compounds:
+   ```
+   cd WT_ROOT && git fetch origin && git merge-base --is-ancestor origin/main HEAD
+   ```
+   - Exit 0 (main is ancestor of HEAD, no divergence) → continue
+   - Exit 1 (main has new commits) → rebase:
+     ```
+     cd WT_ROOT && git rebase origin/main
+     ```
+     - Conflicts → resolve, then `git rebase --continue`. If unresolvable → post blocker comment and STOP:
+       ```
+       gh issue comment ISSUE --body "Blocked: rebase conflict after wave N. Resolve manually in WT_ROOT."
+       ```
+
+3. **Update Comment 2 (Execution Plan) via `--edit-last`:**
    ```
    gh issue comment ISSUE --edit-last --body "## Execution
 
@@ -241,7 +268,7 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
    "
    ```
 
-3. **Every 3 tasks:** compress context via `/summarize-context` (model: haiku)
+4. **Every 3 tasks:** compress context via `/summarize-context` (model: haiku)
 
 ---
 
@@ -256,21 +283,33 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
    - Build step catches SSR/runtime errors (missing providers, import errors, type mismatches)
    - **FAIL** → create fix tasks, return to Phase 4
 
-3. Manual verification (if stack uses docker):
+3. **Code review** (built-in `/code-review`):
+   - Scope: files changed in this branch only — `cd WT_ROOT && git diff main...HEAD --name-only`
+   - Run `/code-review` on those files (not the full codebase)
+   - Collect findings (model: sonnet)
+   - **Findings severity: critical** (security issue, data loss risk, invariant violation) →
+     post as a GitHub comment:
+     ```
+     gh issue comment ISSUE --body "⚠️ Code review flagged critical issues before PR creation:\n\n[findings]"
+     ```
+     Then continue — do NOT block the pipeline.
+   - **No critical findings** → append a `## Code Review` section to the PR body in step 5
+
+4. Manual verification (if stack uses docker):
    - Stop any running containers on the same port: `cd REPO_ROOT && docker compose down`
    - Start containers in worktree: `cd WT_ROOT && docker compose up -d`
    - Print: `ℹ️ App running at http://localhost:3001 — proceeding to push.`
    - Continue without waiting for user input.
 
-4. Push branch:
+5. Push branch:
    ```
    cd WT_ROOT && git push -u origin BRANCH
    ```
    - Push rejected → `cd WT_ROOT && git pull --rebase origin BRANCH`, retry once
 
-5. Create PR (model: haiku):
+6. Create PR as **draft** (model: haiku):
    ```
-   gh pr create --title "feat: ISSUE_TITLE" --body "Closes #ISSUE
+   gh pr create --draft --title "feat: ISSUE_TITLE" --body "Closes #ISSUE
 
    ## Summary
    [spec scope from Phase 2]
@@ -280,10 +319,31 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
    ## Test plan
    [test strategy from Phase 2]
+
+   ## Code Review
+   [findings from step 3, or "No issues found." if clean]
    " --head BRANCH --base main
    ```
+   Draft prevents premature review requests while CI runs.
 
-6. Final update to Comment 2 (Execution Plan) via `--edit-last`:
+7. **CI monitoring** — wait for checks after PR creation:
+   ```
+   gh pr checks PR_URL --watch --interval 30
+   ```
+   - Timeout: 10 minutes. If no checks registered after 2 minutes → skip silently (repo may not have CI).
+   - **All checks pass** → mark PR ready for review:
+     ```
+     gh pr ready PR_URL
+     ```
+     Note `CI: ✅` in step 8 comment update.
+   - **Any check fails** → post comment on issue:
+     ```
+     gh issue comment ISSUE --body "CI failed on PR_URL:\n\n[failing check names and links]"
+     ```
+     Then update Comment 2 with `CI: ❌` and STOP. PR stays as draft. Do NOT proceed to Phase 6 until CI is green.
+     Resume: next `/feature #ISSUE` detects all tasks `[x]` + PR exists → skips to CI re-check.
+
+8. Final update to Comment 2 (Execution Plan) via `--edit-last`:
    ```
    gh issue comment ISSUE --edit-last --body "## Execution
 
@@ -293,6 +353,7 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
    ---
    **PR:** PR_URL
+   **CI:** ✅ / ❌
    **Status:** Complete — Y/Y tasks done. Awaiting user merge.
    "
    ```
@@ -308,11 +369,18 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
    cp WT_ROOT/.claude/memory/project-state.md REPO_ROOT/.claude/memory/project-state.md
    ```
 
-2. **DO NOT remove worktree** — may need fixes post-review
+2. **DO NOT remove worktree** — may need fixes post-review if CI fails or reviewer requests changes.
 
 3. Output: `✅ Feature #ISSUE delivered. PR: PR_URL — merge when ready.`
 
-*(Merging is the user's responsibility.)*
+4. **Stale worktree notice** — list all worktrees older than 7 days:
+   ```
+   git worktree list --porcelain | grep -B1 "$(find ../.worktrees -maxdepth 1 -mtime +7 -type d 2>/dev/null)"
+   ```
+   If any found, print:
+   `"ℹ️ Stale worktrees detected. Run: git worktree remove <path> for each merged branch."`
+
+*(Merging and worktree cleanup are the user's responsibility.)*
 
 ---
 
@@ -324,6 +392,8 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 | Issue not found | `❌ Error: Issue #ISSUE not found.` |
 | Push rejected | `git pull --rebase origin BRANCH`, retry once |
 | Task fails 3x | Post blocker comment to issue, STOP |
+| Rebase conflict during wave | Post blocker comment, STOP — resolve manually in WT_ROOT |
+| CI checks fail | Post failure comment, STOP — next `/feature #ISSUE` re-checks CI |
 | Session interrupted | Next `/feature #ISSUE` resumes automatically from pending phase |
 | Worktree conflicts | `cd WT_ROOT && git rebase origin/main`, resolve conflicts |
 
@@ -340,7 +410,10 @@ When `/feature #N` is invoked and a worktree for that issue already exists:
    - All tasks `[ ]` and no spec → Phase 2
    - Tasks exist but no worktree work started → Phase 4
    - Some tasks `[x]`, some `[ ]` → Phase 4 (continue)
-   - All tasks `[x]` → Phase 5
+   - `phase: blocked` → print blocker description, ask user if resolved → YES: resume Phase 4 → NO: STOP
+   - All tasks `[x]`, no PR → Phase 5
+   - All tasks `[x]`, PR exists, CI pending/failed → Phase 5 step 7 (CI re-check)
+   - All tasks `[x]`, PR exists, CI passed → Phase 6
 
 ---
 
