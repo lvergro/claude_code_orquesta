@@ -1,0 +1,6 @@
+# Personal/local Claude Code settings — never commit
+.claude/settings.local.json
+
+# Local artifacts
+worktree/
+.worktrees/

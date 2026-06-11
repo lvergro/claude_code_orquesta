@@ -3,6 +3,9 @@
   "permissions": {
     "deny": [
       "Bash(rm -rf:*)",
+      "Bash(rm -fr:*)",
+      "Bash(rm -r -f:*)",
+      "Bash(rm -f -r:*)",
       "Bash(rm -rf /:*)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
