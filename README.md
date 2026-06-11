@@ -32,8 +32,8 @@ Working on a real project with a bare LLM session has predictable failure modes.
 | Without Orquesta | With Orquesta |
 |---|---|
 | Context evaporates when the chat compacts or the session ends | All state lives in **files** (`.claude/memory/`). A `SessionStart` hook re-injects the current focus, so every session starts knowing what was in progress |
-| One model does everything — expensive where it doesn't need to be, unpredictable where it matters | **Role-based agents with the right model for each job**: Opus designs (rare, high-value), Sonnet codes (the bulk), Haiku commits (cheap, mechanical) |
-| The assistant can edit anything, anytime | **Enforced tool access**: the planner physically cannot run Bash, the git agent cannot edit files, and a `PreToolUse` hook forces confirmation before touching gate-protected paths (migrations, auth, billing…) |
+| One model does everything — expensive where it doesn't need to be, unpredictable where it matters | **Role-based agents with the right model for each job**: the planner inherits your session's strongest model, Sonnet codes (the bulk), Haiku commits (cheap, mechanical) |
+| The assistant can edit anything, anytime | **Enforced tool access**: the planner physically cannot run Bash, the git agent cannot edit files, and native `ask` permission rules force confirmation before touching gate-protected paths (migrations, auth, billing…) |
 | Big, unreviewable changes with no trail | Every feature follows **issue → spec → waves of tasks → commit per wave → PR**, with two living comments on the issue documenting requirements and execution |
 | Parallel work stomps on itself | Each feature runs in an **isolated git worktree** — main stays clean, features don't collide |
 | "Where were we?" after every interruption | Every pipeline is **resumable**: re-run `/feature #42` and it continues from the persisted state, including blocked tasks and pending CI |
@@ -71,15 +71,17 @@ Subagents are defined in `.claude/agents/*.md`. Their `model`, `tools` and `disa
 
 | Agent | Role | Model | Can do | Cannot do |
 |-------|------|-------|--------|-----------|
-| `planner` | Architect + Researcher | `opus` | Read, analyze, design, write to `memory/` and `docs/` | Bash, code, commits |
+| `planner` | Architect + Researcher | `inherit`* | Read, analyze, design, write to `memory/` and `docs/` | Bash, code, commits |
 | `builder` | Programmer | `sonnet` | Write code, tests, run commands | Push, force-edit gate-protected areas |
 | `git` | Release Manager | `haiku` | Commits and push | Edit/Write any file |
 | `qa` | QA Validator | `sonnet` | Run tests, browser automation, write reports | Edit app source (writes limited to QA artifacts + tests — by rule) |
 
+\* `inherit` uses your session's model — on Max plans you can pin it to `opus`; on Pro it rides your session's Sonnet, which is where your quota goes furthest.
+
 Why this matters:
 
-- **Quality:** the model that decides *what* to build (Opus) is not distracted by syntax; the model that builds (Sonnet) receives a finished spec.
-- **Cost:** Opus runs only during planning. Routine work (commits, labels, summaries) runs on Haiku.
+- **Quality:** the model that decides *what* to build is not distracted by syntax; the model that builds (Sonnet) receives a finished spec.
+- **Cost:** the expensive model runs only during planning — and only if your plan includes it. Routine work (commits, labels) runs on Haiku.
 - **Safety:** a compromised or confused builder still cannot push; the git agent still cannot rewrite your code.
 
 ### Persistent memory
@@ -97,13 +99,14 @@ Chat history is never the source of truth. State lives in files:
 
 One source of truth per artifact — `.claude/memory/` never duplicates `docs/`, it summarizes it.
 
-### Hooks — automation the model can't skip
+### Hooks and permission rules — enforcement the model can't skip
 
 Hooks run as shell scripts on lifecycle events, outside the model's control:
 
-- **`gate-check.sh`** (`PreToolUse` on Edit/Write) — reads `gate_protected_areas` from `project.yml` and forces a confirmation prompt before any edit to protected paths.
 - **`auto-format.sh`** (`PostToolUse` on Edit/Write) — runs the right formatter (prettier, ruff/black, gofmt, rustfmt, shfmt, rubocop) on every modified file. Skips silently if not installed.
 - **`session-context.sh`** (`SessionStart`) — injects the active tasks and current focus from `project-state.md`, so a fresh session knows immediately what's in flight.
+
+Protected paths use Claude Code's **native permission system** instead of a custom hook: `gate_protected_areas` in `project.yml` is the declarative source (pattern + reason), compiled by `/discovery-intake` into `permissions.ask` rules in `settings.json` (`Edit(migrations/**)`, `Write(migrations/**)`…). The runtime itself prompts before any edit — no script in the path, nothing to fail open. CI checks parity between the two files.
 
 ### Path-scoped rules
 
@@ -157,7 +160,7 @@ invariants:
     rule: All DB queries filter by org_id. No cross-tenant data leaks.
     severity: critical
 
-# Paths where the gate-check hook forces a confirmation before any edit
+# Paths where a native ask rule forces a confirmation before any edit
 gate_protected_areas:
   - pattern: "migrations/"
     reason: Schema changes require careful planning
@@ -170,7 +173,7 @@ What each section buys you:
 - **`entities`** — shared vocabulary; the planner uses these names in specs.
 - **`tenant`** — if enabled, "filter by tenant" becomes an enforced rule for the builder, not a hope.
 - **`invariants`** — checked by the planner during specs and by `/validate-invariants`; a critical violation stops the pipeline.
-- **`gate_protected_areas`** — the only mechanism standing between an over-eager edit and your migrations folder. Patterns support `*` (one segment) and `**` (any depth).
+- **`gate_protected_areas`** — the only mechanism standing between an over-eager edit and your migrations folder. Declared here (pattern + reason), enforced as native `permissions.ask` rules in `settings.json` — `/discovery-intake` compiles them, or add the matching `Edit(pattern)`/`Write(pattern)` rules by hand.
 
 ### Step 3 — Tell it HOW to run things (`stack.yml`)
 
@@ -307,7 +310,7 @@ This is what actually happens when you run a feature. Say you want CSV export on
 
 **Phase 1 — Intake.** Creates GitHub issue `#57 "Add CSV export to the orders list"` and labels it (`enhancement`). If you had passed `#42` or an issue URL, it reads the existing issue instead. If you passed `FR-03`, it pulls that requirement's full block from `docs/requirements/functional.md` as built-in acceptance criteria.
 
-**Phase 2 — Spec. The only approval gate in the pipeline.** The planner (Opus) reads `architecture.md`, the relevant ADRs and your invariants, and produces:
+**Phase 2 — Spec. The only approval gate in the pipeline.** The planner reads `architecture.md`, the relevant ADRs and your invariants, and produces:
 
 ```
 Scope: Add an "Export CSV" action to the orders list that streams the
@@ -465,7 +468,6 @@ Phases declare dependencies — editing FRs (phase 2) flags phases 3 and 5 as `p
 ├── settings.local.json                 # Personal/local: extra allows (gitignored)
 │
 ├── hooks/                              # Lifecycle hooks (run as shell scripts)
-│   ├── gate-check.sh                   #   PreToolUse Edit|Write — blocks gate_protected_areas
 │   ├── auto-format.sh                  #   PostToolUse Edit|Write — formats the modified file
 │   └── session-context.sh              #   SessionStart — injects project-state Current Focus
 │
@@ -474,7 +476,7 @@ Phases declare dependencies — editing FRs (phase 2) flags phases 3 and 5 as `p
 │   └── tests.md                        #   paths: **/*.test.*, tests/**
 │
 ├── agents/                             # Subagents — model + tools enforced via frontmatter
-│   ├── planner.md                      #   model: opus  — designs, never codes
+│   ├── planner.md                      #   model: inherit — designs, never codes
 │   ├── builder.md                      #   model: sonnet — codes silently
 │   ├── git.md                          #   model: haiku — commits + pushes
 │   └── qa.md                           #   model: sonnet — runs tests + browser E2E
@@ -497,7 +499,6 @@ Phases declare dependencies — editing FRs (phase 2) flags phases 3 and 5 as `p
 │   ├── sync-schema/SKILL.md            #   /sync-schema — data model sync
 │   ├── prepare-commit/SKILL.md         #   /prepare-commit
 │   ├── validate-invariants/SKILL.md    #   Safety checks
-│   ├── summarize-context/SKILL.md      #   Context compression
 │   ├── write-tests/SKILL.md            #   Test strategy
 │   ├── analyze-architecture/SKILL.md   #   Drift detection
 │   ├── archive-state/SKILL.md          #   State lifecycle
@@ -594,13 +595,13 @@ No. `/feature` works with a hand-written `project.yml` + `architecture.md`. Disc
 Never. Orquesta delivers a reviewed, CI-green PR and stops. Merging — and the judgment it implies — is yours.
 
 **What does it cost to run?**
-Opus is used only in planning/design turns; the bulk of work runs on Sonnet and the mechanical steps on Haiku. The memory model (compact summaries, path-scoped rules, on-demand docs) keeps per-turn context small.
+The planner inherits your session model (pin Opus only if your plan includes it); the bulk of work runs on Sonnet and the mechanical steps on Haiku. The memory model (compact summaries, path-scoped rules, on-demand docs) keeps per-turn context small. On a Pro account this default is the cheapest configuration that preserves the process.
 
 **Does it work without GitHub?**
 The `/feature` pipeline relies on `gh` for issues and PRs. Discovery, memory, hooks and all other skills work without it.
 
 **Can I protect more areas after installing?**
-Yes — add patterns to `gate_protected_areas` in `project.yml` at any time. The hook reads them live; no restart needed.
+Yes — add the pattern to `gate_protected_areas` in `project.yml` and the matching `Edit(pattern)`/`Write(pattern)` rules to `permissions.ask` in `settings.json` (or re-run `/discovery-intake`, which compiles them for you). CI verifies both files stay in sync.
 
 **What happens if my session dies mid-feature?**
 Nothing is lost. State is on disk and in the issue comments. `/feature #N` resumes from the exact phase, task and blocker where it stopped.
