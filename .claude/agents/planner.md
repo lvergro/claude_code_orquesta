@@ -5,7 +5,7 @@ description: >
   and technical research. This agent thinks and plans but NEVER writes code.
   Use when: analyzing requirements, creating execution plans, updating
   architecture documentation, or investigating technologies.
-model: opus
+model: inherit   # uses your session model — pin to opus on plans that include it (Max)
 tools:
   - Read
   - Glob
