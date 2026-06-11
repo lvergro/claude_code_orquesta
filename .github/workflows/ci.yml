@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck hooks
+        run: shellcheck --severity=warning .claude/hooks/*.sh
+
+      # The smoke tests run with Ubuntu's default awk (mawk) — this is the
+      # environment where the original gawk-dependent gate failed open.
+      - name: gate-check smoke test
+        env:
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+
+          # Protected path (migrations/ in project.yml) → must ask
+          out=$(printf '{"tool_input":{"file_path":"%s/migrations/001.sql"}}' "$PWD" | bash .claude/hooks/gate-check.sh)
+          echo "$out" | grep -q '"permissionDecision": "ask"'
+
+          # Nested path under a protected area → must ask
+          out=$(printf '{"tool_input":{"file_path":"%s/migrations/2026/add.sql"}}' "$PWD" | bash .claude/hooks/gate-check.sh)
+          echo "$out" | grep -q '"permissionDecision": "ask"'
+
+          # Unprotected path → no decision, exit 0
+          out=$(printf '{"tool_input":{"file_path":"%s/src/index.ts"}}' "$PWD" | bash .claude/hooks/gate-check.sh)
+          test -z "$out"
+
+          # Invalid JSON → no decision, exit 0
+          out=$(printf 'not-json' | bash .claude/hooks/gate-check.sh)
+          test -z "$out"
+
+      - name: session-context smoke test
+        env:
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          # Idle template state → no injection, exit 0
+          out=$(bash .claude/hooks/session-context.sh)
+          test -z "$out"
