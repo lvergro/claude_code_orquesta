@@ -137,7 +137,7 @@ gh issue create --title "TITLE" --body "BODY"
 
 6. Post **Comment 2 — Execution Plan** (living comment, edited throughout):
    ```
-   gh issue comment ISSUE --body "## Execution
+   COMMENT2_URL=$(gh issue comment ISSUE --body "## Execution
 
    ### Wave 1: [Name]
    - [ ] Task description
@@ -148,14 +148,19 @@ gh issue create --title "TITLE" --body "BODY"
 
    ---
    **Status:** Starting execution
-   "
+   ")
    ```
+   Extract `COMMENT2_ID` from the returned URL (`...#issuecomment-<ID>`).
+   ALL later updates edit this comment by ID — never `--edit-last`, which
+   would overwrite whatever comment happens to be last (e.g. a blocker or
+   CI-failure comment posted in between).
 
 7. Write tasks to `project-state.md` with metadata:
    ```
    skill: feature
    issue: #ISSUE
    branch: BRANCH
+   comment2_id: COMMENT2_ID
    phase: execution
    ```
 
@@ -180,9 +185,6 @@ gh issue create --title "TITLE" --body "BODY"
    ```
    cp REPO_ROOT/.claude/memory/project-state.md WT_ROOT/.claude/memory/project-state.md
    ```
-
-4. Initialize clean locks in worktree:
-   - Write empty `WT_ROOT/.claude/memory/locks.md`
 
 ---
 
@@ -227,9 +229,10 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
 **After EVERY completed wave, run these 4 steps in order — NO EXCEPTIONS:**
 
-1. **Commit:**
+1. **Commit** — stage everything except memory state (session-local; committing
+   it churns every PR and contradicts the git agent's "never -A" rule):
    ```
-   cd WT_ROOT && git add -A && git commit -m "feat(SLUG): wave N — [summary]"
+   cd WT_ROOT && git add -- . ':!.claude/memory' && git commit -m "feat(SLUG): wave N — [summary]"
    ```
 
 2. **Rebase check** — detect main divergence before it compounds:
@@ -246,9 +249,9 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
        gh issue comment ISSUE --body "Blocked: rebase conflict after wave N. Resolve manually in WT_ROOT."
        ```
 
-3. **Update Comment 2 (Execution Plan) via `--edit-last`:**
+3. **Update Comment 2 (Execution Plan) by ID** (`comment2_id` from project-state.md):
    ```
-   gh issue comment ISSUE --edit-last --body "## Execution
+   gh api repos/{owner}/{repo}/issues/comments/COMMENT2_ID -X PATCH -f body="## Execution
 
    ### Wave 1: [Name]
    - [x] Task description
@@ -261,12 +264,9 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
    **Status:** Wave N complete — X/Y tasks done
    "
    ```
-   If `--edit-last` fails (first wave, no previous comment by this actor), post a new comment:
-   ```
-   gh issue comment ISSUE --body "## Execution
-   ...
-   "
-   ```
+   If `comment2_id` is missing from project-state.md (state written by an older
+   run), post a new comment, extract its ID from the returned URL, and persist
+   it to project-state.md before continuing.
 
 4. **Every 3 tasks:** compress context via `/summarize-context` (model: haiku)
 
@@ -295,10 +295,13 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
      Then continue — do NOT block the pipeline.
    - **No critical findings** → append a `## Code Review` section to the PR body in step 5
 
-4. Manual verification (if stack uses docker):
-   - Stop any running containers on the same port: `cd REPO_ROOT && docker compose down`
+4. Manual verification (if stack uses docker) — the Phase 4 isolation rule
+   still applies: never `cd REPO_ROOT`, never stop the main checkout's services.
    - Start containers in worktree: `cd WT_ROOT && docker compose up -d`
-   - Print: `ℹ️ App running at http://localhost:3001 — proceeding to push.`
+   - Port already in use (main checkout running) → print
+     `ℹ️ Port busy — stop the main checkout's containers manually to verify this worktree.`
+     and continue.
+   - On success print: `ℹ️ App running at [URL from stack.commands.dev / compose ports] — proceeding to push.`
    - Continue without waiting for user input.
 
 5. Push branch:
@@ -328,9 +331,11 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
 7. **CI monitoring** — wait for checks after PR creation:
    ```
-   gh pr checks PR_URL --watch --interval 30
+   timeout 600 gh pr checks PR_URL --watch --interval 30
    ```
-   - Timeout: 10 minutes. If no checks registered after 2 minutes → skip silently (repo may not have CI).
+   - `timeout` enforces the 10-minute cap. Exit 124 (timed out) → treat as CI
+     still pending: leave the PR as draft and STOP; next `/feature #ISSUE` re-checks.
+   - If no checks registered after 2 minutes → skip silently (repo may not have CI).
    - **All checks pass** → mark PR ready for review:
      ```
      gh pr ready PR_URL
@@ -343,9 +348,9 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
      Then update Comment 2 with `CI: ❌` and STOP. PR stays as draft. Do NOT proceed to Phase 6 until CI is green.
      Resume: next `/feature #ISSUE` detects all tasks `[x]` + PR exists → skips to CI re-check.
 
-8. Final update to Comment 2 (Execution Plan) via `--edit-last`:
+8. Final update to Comment 2 (Execution Plan) by ID:
    ```
-   gh issue comment ISSUE --edit-last --body "## Execution
+   gh api repos/{owner}/{repo}/issues/comments/COMMENT2_ID -X PATCH -f body="## Execution
 
    ### Wave 1: [Name]
    - [x] Task description
@@ -373,12 +378,13 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
 3. Output: `✅ Feature #ISSUE delivered. PR: PR_URL — merge when ready.`
 
-4. **Stale worktree notice** — list all worktrees older than 7 days:
+4. **Stale worktree notice** — list worktrees untouched for 7+ days
+   (branches contain a slash, so worktree dirs sit at depth 2):
    ```
-   git worktree list --porcelain | grep -B1 "$(find ../.worktrees -maxdepth 1 -mtime +7 -type d 2>/dev/null)"
+   find REPO_ROOT/../.worktrees -mindepth 2 -maxdepth 2 -type d -mtime +7 2>/dev/null
    ```
    If any found, print:
-   `"ℹ️ Stale worktrees detected. Run: git worktree remove <path> for each merged branch."`
+   `"ℹ️ Stale worktrees detected. Run /cleanup-worktrees to review and remove merged ones."`
 
 *(Merging and worktree cleanup are the user's responsibility.)*
 
@@ -404,7 +410,7 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 When `/feature #N` is invoked and a worktree for that issue already exists:
 
 1. Read `WT_ROOT/.claude/memory/project-state.md`
-2. Parse metadata: `skill`, `issue`, `branch`, `phase`
+2. Parse metadata: `skill`, `issue`, `branch`, `comment2_id`, `phase`
 3. Find first uncompleted task `[ ]`
 4. Resume from the appropriate phase:
    - All tasks `[ ]` and no spec → Phase 2
@@ -424,5 +430,5 @@ When `/feature #N` is invoked and a worktree for that issue already exists:
 - Worktree location: `REPO_ROOT/../.worktrees/feat/ISSUE-SLUG`
 - Commits inside worktree use conventional format: `feat(SLUG): description`
 - All GitHub communication via `gh` CLI — no API tokens needed beyond `gh auth`
-- **2 comments only**: Comment 1 (Requirements — immutable), Comment 2 (Execution — living)
+- **2 pipeline comments**: Comment 1 (Requirements — immutable), Comment 2 (Execution — living, edited via stored `comment2_id`, never `--edit-last`). Blocker/CI comments are additional and never edited.
 - **Labels**: GitHub defaults only (`bug`, `enhancement`, `documentation`, `good first issue`, `help wanted`, `question`, `duplicate`, `invalid`, `wontfix`)
