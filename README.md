@@ -19,7 +19,7 @@ Four subagents with **enforced** tool access (via `tools` / `disallowedTools` fr
 | `planner` | Architect + Researcher | `opus` | Read, analyze, design, write to memory/ and docs/ | Bash, code, commits |
 | `builder` | Programmer | `sonnet` | Write code, tests, run commands | Push, force-edit gate-protected areas |
 | `git` | Release Manager | `haiku` | Commits and push | Edit/Write any file |
-| `qa` | QA Validator | `sonnet` | Run tests, browser automation, write reports | (no source-edit restriction yet — by convention) |
+| `qa` | QA Validator | `sonnet` | Run tests, browser automation, write reports | Edit app source (writes limited to QA artifacts + tests — by rule) |
 
 ---
 
@@ -104,6 +104,7 @@ Parallel features? Multiple terminals, each with a different `/feature #N`. Each
 │
 ├── hooks/                              # Lifecycle hooks (run as shell scripts)
 │   ├── gate-check.sh                   #   PreToolUse Edit|Write — blocks gate_protected_areas
+│   ├── auto-format.sh                  #   PostToolUse Edit|Write — formats the modified file
 │   └── session-context.sh              #   SessionStart — injects project-state Current Focus
 │
 ├── rules/                              # Path-scoped rules (load only when matching files touched)
@@ -137,7 +138,8 @@ Parallel features? Multiple terminals, each with a different `/feature #N`. Each
 │   ├── summarize-context/SKILL.md      #   Context compression
 │   ├── write-tests/SKILL.md            #   Test strategy
 │   ├── analyze-architecture/SKILL.md   #   Drift detection
-│   └── archive-state/SKILL.md          #   State lifecycle
+│   ├── archive-state/SKILL.md          #   State lifecycle
+│   └── cleanup-worktrees/SKILL.md      #   /cleanup-worktrees — remove merged worktrees
 │
 └── memory/                             # Compact runtime state — derived from docs/, not duplicated
     ├── architecture.md                 #   Executive summary, ~30 lines (full C4 lives in docs/architecture/)
@@ -344,6 +346,7 @@ Useful when you already have a partial setup and just want to evolve one piece. 
 /audit src/auth                                           # security audit on a path
 /sync-schema                                              # force data model sync
 /prepare-commit                                           # validate readiness + draft commit msg
+/cleanup-worktrees                                        # remove worktrees whose PRs merged
 ```
 
 ---

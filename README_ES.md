@@ -19,7 +19,7 @@ Cuatro subagentes con acceso a herramientas **enforced** (mediante `tools` / `di
 | `planner` | Arquitecto + Investigador | `opus` | Leer, analizar, diseñar, escribir en memory/ y docs/ | Bash, código, commits |
 | `builder` | Programador | `sonnet` | Escribir código, tests, ejecutar comandos | Push, editar áreas gate-protected |
 | `git` | Release Manager | `haiku` | Commits y push | Edit/Write de cualquier archivo |
-| `qa` | Validador QA | `sonnet` | Tests, automatización de browser, reportes | (sin restricción de edición de fuente aún — por convención) |
+| `qa` | Validador QA | `sonnet` | Tests, automatización de browser, reportes | Editar código fuente (escrituras limitadas a artefactos QA + tests — por regla) |
 
 ---
 
@@ -104,6 +104,7 @@ PHASE 6 → Cleanup (archivar estado)
 │
 ├── hooks/                              # Hooks de ciclo de vida (corren como shell scripts)
 │   ├── gate-check.sh                   #   PreToolUse Edit|Write — bloquea gate_protected_areas
+│   ├── auto-format.sh                  #   PostToolUse Edit|Write — formatea el archivo modificado
 │   └── session-context.sh              #   SessionStart — inyecta Current Focus de project-state
 │
 ├── rules/                              # Reglas con paths (cargan solo al tocar archivos matching)
@@ -137,7 +138,8 @@ PHASE 6 → Cleanup (archivar estado)
 │   ├── summarize-context/SKILL.md      #   Compresión de contexto
 │   ├── write-tests/SKILL.md            #   Estrategia de tests
 │   ├── analyze-architecture/SKILL.md   #   Detección de drift
-│   └── archive-state/SKILL.md          #   Ciclo de vida del estado
+│   ├── archive-state/SKILL.md          #   Ciclo de vida del estado
+│   └── cleanup-worktrees/SKILL.md      #   /cleanup-worktrees — elimina worktrees mergeados
 │
 └── memory/                             # Estado runtime compacto — derivado de docs/, sin duplicar
     ├── architecture.md                 #   Resumen ejecutivo, ~30 líneas (C4 completo en docs/architecture/)
@@ -344,6 +346,7 @@ No hace falta correr el pipeline completo. Cada fase es una skill standalone:
 /audit src/auth                                           # auditoría de seguridad por path
 /sync-schema                                              # forzar sync del modelo de datos
 /prepare-commit                                           # validar readiness + draft de commit
+/cleanup-worktrees                                        # eliminar worktrees con PR mergeado
 ```
 
 ---
