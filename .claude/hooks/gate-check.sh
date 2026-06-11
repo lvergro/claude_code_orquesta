@@ -3,62 +3,84 @@
 # Reads JSON from stdin, emits permissionDecision JSON. Exit 0 always.
 #
 # Single source of truth for patterns: project.yml → gate_protected_areas.
-# Naive YAML parse: extracts lines matching `- pattern: "..."` under that key.
+# All parsing and matching happens in python3: no gawk/mawk dependency, and
+# values reach the script via environment variables — never interpolated
+# into code (a quote in a pattern or reason must not break the gate).
 
-set -euo pipefail
+set -uo pipefail
+
+PROJECT_YML="${CLAUDE_PROJECT_DIR:-.}/.claude/project.yml"
+[[ -f "$PROJECT_YML" ]] || exit 0
 
 INPUT=$(cat)
-PROJECT_YML="${CLAUDE_PROJECT_DIR:-.}/.claude/project.yml"
 
-FILE_PATH=$(printf '%s' "$INPUT" | python3 -c 'import json,sys; d=json.load(sys.stdin); ti=d.get("tool_input",{}); print(ti.get("file_path") or ti.get("path") or "")' 2>/dev/null || echo "")
+HOOK_INPUT="$INPUT" PROJECT_YML="$PROJECT_YML" PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}" \
+python3 - <<'PY'
+import json, os, re, sys
 
-if [[ -z "$FILE_PATH" || ! -f "$PROJECT_YML" ]]; then
-  exit 0
-fi
+try:
+    data = json.loads(os.environ.get("HOOK_INPUT", "{}"))
+except ValueError:
+    sys.exit(0)
 
-# Extract protected patterns (works for: `- pattern: "foo/"` or `- pattern: foo/`)
-PATTERNS=$(awk '
-  /^gate_protected_areas:/ { in_section=1; next }
-  in_section && /^[a-zA-Z]/ { in_section=0 }
-  in_section && /^[[:space:]]*-[[:space:]]*pattern:/ {
-    sub(/^[[:space:]]*-[[:space:]]*pattern:[[:space:]]*/, "")
-    gsub(/^"|"$|^'\''|'\''$/, "")
-    print
-  }
-' "$PROJECT_YML")
+ti = data.get("tool_input", {})
+file_path = ti.get("file_path") or ti.get("path") or ""
+if not file_path:
+    sys.exit(0)
 
-[[ -z "$PATTERNS" ]] && exit 0
+# Naive YAML parse: `- pattern: "..."` / `reason: ...` pairs under the
+# gate_protected_areas key. Works for quoted and unquoted values.
+areas = []
+current = None
+in_section = False
+try:
+    with open(os.environ["PROJECT_YML"], encoding="utf-8") as f:
+        for line in f:
+            if re.match(r"^gate_protected_areas:", line):
+                in_section = True
+                continue
+            if in_section and re.match(r"^[A-Za-z]", line):
+                break
+            if not in_section or re.match(r"^\s*#", line):
+                continue
+            m = re.match(r"""^\s*-\s*pattern:\s*["']?([^"'#]+?)["']?\s*$""", line)
+            if m:
+                current = {"pattern": m.group(1).strip(), "reason": ""}
+                areas.append(current)
+                continue
+            m = re.match(r"""^\s*reason:\s*["']?(.+?)["']?\s*$""", line)
+            if m and current is not None:
+                current["reason"] = m.group(1).strip()
+except OSError:
+    sys.exit(0)
 
-REL_PATH="${FILE_PATH#${CLAUDE_PROJECT_DIR:-.}/}"
+if not areas:
+    sys.exit(0)
 
-while IFS= read -r PATTERN; do
-  [[ -z "$PATTERN" ]] && continue
-  # Convert simple glob to regex: ** → .*, * → [^/]*, /  literal
-  REGEX=$(printf '%s' "$PATTERN" | sed 's|\.|\\.|g; s|\*\*|.*|g; s|\*|[^/]*|g')
-  if [[ "$REL_PATH" =~ ^${REGEX} || "$FILE_PATH" =~ ${REGEX} ]]; then
-    REASON=$(awk -v pat="$PATTERN" '
-      /^gate_protected_areas:/ { in_section=1; next }
-      in_section && /^[a-zA-Z]/ { in_section=0 }
-      in_section && match($0, /pattern:[[:space:]]*"?'"'"'?([^"'"'"']*)/, m) { last=m[1] }
-      in_section && /reason:/ && last==pat {
-        sub(/^[[:space:]]*reason:[[:space:]]*/, "")
-        print; exit
-      }
-    ' "$PROJECT_YML")
-    [[ -z "$REASON" ]] && REASON="Protected area (gate_protected_areas in project.yml)"
+prefix = os.environ.get("PROJECT_DIR", ".").rstrip("/") + "/"
+rel_path = file_path[len(prefix):] if file_path.startswith(prefix) else file_path
 
-    python3 -c "
-import json
-print(json.dumps({
-  'hookSpecificOutput': {
-    'hookEventName': 'PreToolUse',
-    'permissionDecision': 'ask',
-    'permissionDecisionReason': f'Gate-protected path \"$REL_PATH\" matches \"$PATTERN\". Reason: $REASON'
-  }
-}))
-"
-    exit 0
-  fi
-done <<< "$PATTERNS"
+def glob_to_regex(pattern):
+    # ** crosses directories, * stays within one segment. The placeholder
+    # keeps the * substitution from mangling the .* produced by **.
+    out = re.escape(pattern)
+    out = out.replace(r"\*\*", "\x00").replace(r"\*", "[^/]*").replace("\x00", ".*")
+    return out
+
+for area in areas:
+    regex = glob_to_regex(area["pattern"])
+    if re.match(regex, rel_path) or re.search(regex, file_path):
+        reason = area["reason"] or "Protected area (gate_protected_areas in project.yml)"
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "ask",
+                "permissionDecisionReason":
+                    'Gate-protected path "%s" matches "%s". Reason: %s'
+                    % (rel_path, area["pattern"], reason),
+            }
+        }))
+        break
+PY
 
 exit 0

@@ -21,11 +21,11 @@ if echo "$SUMMARY" | grep -qE '^(task|file|test):[[:space:]]*\(none\)' && \
   exit 0
 fi
 
-python3 -c "
-import json, sys
-ctx = '''Active project state (.claude/memory/project-state.md):
-
-$SUMMARY'''
+# SUMMARY goes in via the environment — interpolating it into the Python
+# source would break on quotes in the state file.
+SUMMARY="$SUMMARY" python3 -c "
+import json, os
+ctx = 'Active project state (.claude/memory/project-state.md):\n\n' + os.environ.get('SUMMARY', '')
 print(json.dumps({
   'hookSpecificOutput': {
     'hookEventName': 'SessionStart',
