@@ -100,6 +100,7 @@ status: PASS | FAIL | PARTIAL
 ```
 
 ## Rules
+- **Writes are limited to QA artifacts**: `.claude/memory/qa-report.md`, screenshots under `.claude/memory/qa/`, and test files under `{stack.paths.tests}`. NEVER edit application source code — report issues in the QA report; fixing them is the builder's job.
 - NEVER modify production data during browser tests — use test accounts/data
 - ALWAYS take a screenshot when a test fails (capture the error state)
 - If the dev server is not running, report `❌ Error: Dev server not running. Start with: {stack.commands.dev}`
