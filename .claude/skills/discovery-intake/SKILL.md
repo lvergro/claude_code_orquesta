@@ -106,7 +106,7 @@ After the `.claude/` writes succeed, check `stack.yml → tracker.type`.
 
 - Not set, `none`, or section missing → skip silently. Done.
 - `linear` → run Linear sync (below).
-- `github` → run GitHub sync (TODO — not implemented yet; skip with notice).
+- `github` → run GitHub sync (below).
 
 ### Linear sync (hybrid model)
 
@@ -151,11 +151,44 @@ Steps:
    fr_orphans: <N>
    ```
 
+### GitHub sync (hybrid model)
+
+Same goal and same idempotency contract as the Linear sync, using the `gh` CLI —
+no MCP required. Precondition: `gh auth status` passes; otherwise warn and skip.
+
+Steps:
+
+1. **Resolve repo:** read `stack.yml → tracker.github.repo`; default to the
+   `origin` remote of the current repository.
+2. **Ensure label** (idempotent — `--force` updates if it already exists):
+   ```
+   gh label create fr --description "Functional requirement (parent issue)" --force
+   ```
+3. **For each FR in `docs/requirements/functional.md`:**
+   - Title: `[FR-N] <FR title>`
+   - Body: the full FR markdown block (Actor, Trigger, Outcome, Verifiable by).
+   - **Lookup first:**
+     ```
+     gh issue list --label fr --search "[FR-N] in:title" --state all --json number,title
+     ```
+     Match on the exact `[FR-N]` title prefix.
+     - Found → `gh issue edit NUMBER --title "..." --body "..."`
+     - Not found → `gh issue create --title "..." --body "..." --label fr`
+   - **Idempotent:** skip the edit when the body hash matches the hash stored
+     in `docs/.tracker-sync.md` (same index file the Linear sync uses).
+4. **Detect orphans:** issues labeled `fr` whose `[FR-N]` prefix is not in
+   `docs/requirements/functional.md`. Print the same triage warning as Linear.
+5. **Update state file:** add the `## phase_8_tracker_sync` block to
+   `docs/.discovery-state.md` with `tracker: github`.
+
+`/feature FR-N` then finds the parent by searching `[FR-N]` in issue titles and
+references it from the implementation issue.
+
 ### Failure handling
 
-- MCP not available / tool errors → print warning, continue. The intake still
-  succeeds; only the tracker sync is skipped. The user can retry by re-running
-  `/discovery-intake` after fixing the MCP setup.
+- MCP not available / `gh` not authenticated / tool errors → print warning,
+  continue. The intake still succeeds; only the tracker sync is skipped. The
+  user can retry by re-running `/discovery-intake` after fixing the setup.
 - Network failures → same. Sync is best-effort, not blocking.
 
 ---
