@@ -8,7 +8,7 @@ paths:
 
 # Migrations Rules
 
-Schema changes are gate-protected (`project.yml` → `gate_protected_areas`).
+Schema changes are gate-protected: declared in `project.yml` → `gate_protected_areas`, enforced as `permissions.ask` rules in `settings.json`.
 
 ## Before editing
 1. Verify the migration is on the planner's spec — never invent schema changes mid-build.

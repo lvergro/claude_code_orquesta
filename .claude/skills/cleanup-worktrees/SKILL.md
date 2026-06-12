@@ -9,12 +9,14 @@ user-invocable: true
 
 # /cleanup-worktrees
 
-1. Resolve roots:
+1. Resolve scope:
    - `REPO_ROOT` = `git rev-parse --show-toplevel`
-   - `WT_BASE` = `REPO_ROOT/../.worktrees`
-   - No worktrees under WT_BASE → `✅ No worktrees to clean.` and stop.
+   - Scope = every **linked** worktree in `git worktree list --porcelain`
+     (skip the main checkout). Covers both manual worktrees under
+     `../.worktrees/` and native ones created by the runtime.
+   - No linked worktrees → `✅ No worktrees to clean.` and stop.
 
-2. For each worktree in `git worktree list --porcelain` whose path is under WT_BASE:
+2. For each worktree in scope:
    - `BRANCH` from its `branch refs/heads/...` line
    - **Dirty check:** `git -C PATH status --porcelain` non-empty → mark `⚠️ dirty`, never a candidate.
    - **PR state:** `gh pr view BRANCH --json state` (no PR → treat as active)
@@ -43,4 +45,4 @@ user-invocable: true
 ## Rules
 
 - NEVER `git worktree remove --force` or `git branch -D`. If git refuses, the user decides manually.
-- NEVER touch the main checkout or worktrees outside WT_BASE.
+- NEVER touch the main checkout.

@@ -45,7 +45,11 @@ critical_flows: []
   #   tables: [payments, balances, receipts]
   #   type: transaction
 
-# Areas that require extra care during /feature execution
+# Areas that require extra care during /feature execution.
+# Declarative source of truth — enforced as native permissions.ask rules in
+# settings.json ("Edit(<pattern>)" / "Write(<pattern>)"), compiled by
+# /discovery-intake. If you add a pattern here by hand, add the matching ask
+# rules to settings.json too (or re-run /discovery-intake).
 gate_protected_areas:
   - pattern: "migrations/"
     reason: Schema changes require careful planning

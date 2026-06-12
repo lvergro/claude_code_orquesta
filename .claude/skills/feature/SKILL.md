@@ -52,7 +52,9 @@ Input: `#42`, `42`, issue URL, or free-text description.
    - `SLUG` = kebab-case of issue title, max 40 chars
    - `BRANCH` = `feat/ISSUE-SLUG` (e.g. `feat/42-add-notifications`)
    - `REPO_ROOT` = `git rev-parse --show-toplevel`
-   - `WT_ROOT` = `REPO_ROOT/../.worktrees/BRANCH`
+   - `WT_ROOT` = the existing worktree's path for BRANCH from `git worktree list`
+     if one exists; otherwise `REPO_ROOT/../.worktrees/BRANCH` (manual fallback
+     location — native worktree isolation may place it elsewhere)
 
 6. Check if worktree already exists:
    ```
@@ -86,7 +88,7 @@ gh issue create --title "TITLE" --body "BODY"
 
 ## phase 2: spec
 
-1. Invoke **planner agent** (model: opus) with context:
+1. Invoke **planner agent** with context:
    - Issue body (title + description)
    - `.claude/memory/architecture.md` (compact summary)
    - `docs/decisions/ADR-*.md` (canonical ADRs — pick the relevant ones)
@@ -103,7 +105,9 @@ gh issue create --title "TITLE" --body "BODY"
    - **Recommended labels**: additional labels based on analysis
 
 3. **Present plan to user and wait for approval — ONLY USER GATE IN THIS PIPELINE:**
-   - Print the full spec: Scope, Acceptance Criteria, Invariants Affected, Tasks (all waves), Files, Test Strategy
+   - If the session is in plan mode, present the spec through the native plan
+     approval (ExitPlanMode) — a runtime gate is harder to skip than a prompt.
+   - Otherwise print the full spec: Scope, Acceptance Criteria, Invariants Affected, Tasks (all waves), Files, Test Strategy
    - Print: `Proceed with implementation? (yes/no)`
    - **YES** → continue to step 4
    - **NO** → print `❌ Cancelled by user.` and STOP. Do NOT post GitHub comments or create worktree.
@@ -175,11 +179,17 @@ gh issue create --title "TITLE" --body "BODY"
    ```
    - If merge fails (local has diverged) → `❌ Error: Local main has diverged from origin. Resolve manually.`
 
-2. Create worktree directory:
-   ```
-   mkdir -p REPO_ROOT/../.worktrees
-   git worktree add WT_ROOT -b BRANCH origin/main
-   ```
+2. Create the worktree:
+   - **Native (preferred):** if the runtime offers worktree isolation (an
+     EnterWorktree tool or `--worktree`), use it with branch BRANCH — it honors
+     `worktree.symlinkDirectories` (no duplicated node_modules per worktree)
+     and `worktree.baseRef` from settings.json. Set WT_ROOT to the path it
+     reports.
+   - **Fallback (manual):**
+     ```
+     mkdir -p REPO_ROOT/../.worktrees
+     git worktree add WT_ROOT -b BRANCH origin/main
+     ```
 
 3. Copy state to worktree:
    ```
@@ -213,6 +223,10 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
 
 **For each task `[ ]` in `WT_ROOT/.claude/memory/project-state.md`:**
 
+If the runtime exposes a native task list (TaskCreate/TaskUpdate), mirror the
+wave's tasks there for in-session visibility — `project-state.md` remains the
+durable source for cross-session resume.
+
 1. **Builder agent** (model: sonnet) implements + tests
 2. **PASS** → mark `[x]`, print `✅ [task_number] task_description`
 3. **FAIL** → retry (max 2 retries). 3rd failure → post blocker to issue, write state, STOP:
@@ -227,7 +241,7 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
    Resume: next `/feature #ISSUE` reads `phase: blocked` → prints blocker description → asks user:
    `"Blocker: [description]. Resolved? (yes/no)"` → YES: set `phase: execution`, continue from first `[ ]` task → NO: STOP.
 
-**After EVERY completed wave, run these 4 steps in order — NO EXCEPTIONS:**
+**After EVERY completed wave, run these 3 steps in order — NO EXCEPTIONS:**
 
 1. **Commit** — stage everything except memory state (session-local; committing
    it churns every PR and contradicts the git agent's "never -A" rule):
@@ -268,7 +282,9 @@ If an agent or skill tries to reference a path outside WT_ROOT → STOP and fix 
    run), post a new comment, extract its ID from the returned URL, and persist
    it to project-state.md before continuing.
 
-4. **Every 3 tasks:** compress context via `/summarize-context` (model: haiku)
+*(Context compression is the runtime's job — auto-compact handles it. Do not
+spend turns summarizing manually; just keep project-state.md current so a
+compacted or fresh session can resume.)*
 
 ---
 

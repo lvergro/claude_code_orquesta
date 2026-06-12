@@ -14,29 +14,35 @@ jobs:
       - name: ShellCheck hooks
         run: shellcheck --severity=warning .claude/hooks/*.sh
 
-      # The smoke tests run with Ubuntu's default awk (mawk) — this is the
-      # environment where the original gawk-dependent gate failed open.
-      - name: gate-check smoke test
-        env:
-          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
+      - name: gate parity check
         run: |
           set -euo pipefail
+          # Every gate_protected_areas pattern in project.yml must have
+          # matching Edit/Write ask rules in settings.json (native enforcement).
+          python3 - <<'PY'
+          import json, re, sys
 
-          # Protected path (migrations/ in project.yml) → must ask
-          out=$(printf '{"tool_input":{"file_path":"%s/migrations/001.sql"}}' "$PWD" | bash .claude/hooks/gate-check.sh)
-          echo "$out" | grep -q '"permissionDecision": "ask"'
+          patterns = []
+          in_section = False
+          for line in open(".claude/project.yml", encoding="utf-8"):
+              if re.match(r"^gate_protected_areas:", line):
+                  in_section = True
+                  continue
+              if in_section and re.match(r"^[A-Za-z]", line):
+                  break
+              if not in_section or re.match(r"^\s*#", line):
+                  continue
+              m = re.match(r"""^\s*-\s*pattern:\s*["']?([^"'#]+?)["']?\s*$""", line)
+              if m:
+                  patterns.append(m.group(1).strip())
 
-          # Nested path under a protected area → must ask
-          out=$(printf '{"tool_input":{"file_path":"%s/migrations/2026/add.sql"}}' "$PWD" | bash .claude/hooks/gate-check.sh)
-          echo "$out" | grep -q '"permissionDecision": "ask"'
-
-          # Unprotected path → no decision, exit 0
-          out=$(printf '{"tool_input":{"file_path":"%s/src/index.ts"}}' "$PWD" | bash .claude/hooks/gate-check.sh)
-          test -z "$out"
-
-          # Invalid JSON → no decision, exit 0
-          out=$(printf 'not-json' | bash .claude/hooks/gate-check.sh)
-          test -z "$out"
+          ask = set(json.load(open(".claude/settings.json"))["permissions"]["ask"])
+          missing = [p for p in patterns
+                     if not any(r.startswith(("Edit(", "Write(")) and p.rstrip("/*") in r for r in ask)]
+          if missing:
+              sys.exit(f"gate_protected_areas without ask rules in settings.json: {missing}")
+          print(f"gate parity OK ({len(patterns)} patterns covered)")
+          PY
 
       - name: session-context smoke test
         env:

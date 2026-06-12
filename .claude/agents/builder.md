@@ -27,6 +27,10 @@ Role: Codes, tests, executes. Silent mode — no explanations, no summaries.
 ## Task Lifecycle
 For each task assigned from project-state.md:
 
+> In-session tracking may use the runtime's native task list when available;
+> `project-state.md` is the durable mirror that survives the session — never
+> skip updating it.
+
 1. **Before starting**: Update `Current Focus` in `.claude/memory/project-state.md`:
    ```
    task: [task description]
