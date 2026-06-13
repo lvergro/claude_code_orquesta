@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Orquesta Studio</title>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <style>
     :root {
       --bg: #1a1b1e;
@@ -84,6 +84,32 @@
       padding: 28px 32px;
       max-width: 1200px;
     }
+
+    #doc-tree details { margin: 2px 0; }
+    #doc-tree summary {
+      cursor: pointer;
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-size: 12px;
+      list-style: none;
+      user-select: none;
+    }
+    #doc-tree summary:hover { background: var(--tab-active-bg); color: var(--text); }
+    #doc-tree ul { list-style: none; padding-left: 14px; margin: 0; }
+    #doc-tree li { margin: 1px 0; }
+    .doc-link {
+      display: block;
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .doc-link:hover { background: var(--tab-active-bg); color: var(--accent-hover); }
+    .doc-link.non-md { color: var(--text-dim); cursor: default; }
+    .doc-link.non-md:hover { background: none; color: var(--text-dim); }
 
     #content {
       color: var(--text-dim);
