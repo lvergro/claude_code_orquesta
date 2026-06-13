@@ -168,6 +168,146 @@
     .htmx-request .htmx-indicator {
       opacity: 1;
     }
+
+    /* Kanban board */
+    .kanban-board {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      overflow-x: auto;
+    }
+
+    .kanban-col {
+      flex: 1;
+      min-width: 220px;
+      background: #1e1e2e;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .kanban-col h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+
+    .col-count {
+      background: var(--border);
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-left: 4px;
+    }
+
+    .card {
+      background: #2a2a3e;
+      border-radius: 6px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .card-num {
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+
+    .card-labels {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .label-chip {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: var(--border);
+      color: var(--text-dim);
+    }
+
+    .card-title {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action, .copy-btn {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      cursor: pointer;
+    }
+
+    .btn-action:hover, .copy-btn:hover {
+      background: var(--tab-active-bg);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      border-color: #c92a2a;
+      color: #ff6b6b;
+    }
+
+    .btn-danger:hover {
+      background: #2d1010;
+    }
+
+    .create-form {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 0.75rem;
+    }
+
+    .create-form input,
+    .create-form textarea,
+    .create-form select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 12px;
+      padding: 4px 8px;
+    }
+
+    .create-form textarea {
+      resize: vertical;
+      min-height: 48px;
+    }
+
+    .create-form button {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .create-form button:hover {
+      background: var(--accent);
+      color: #000;
+    }
   </style>
 </head>
 <body>
