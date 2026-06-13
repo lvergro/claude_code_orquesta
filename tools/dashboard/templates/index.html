@@ -308,6 +308,168 @@
       background: var(--accent);
       color: #000;
     }
+
+    /* State tab */
+    .state-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 860px;
+    }
+
+    .state-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+
+    .state-section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .state-section h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 10px 0 4px;
+    }
+
+    .state-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 13px;
+    }
+
+    .state-table th {
+      text-align: left;
+      color: var(--text-dim);
+      font-weight: 500;
+      width: 110px;
+      padding: 4px 8px 4px 0;
+      vertical-align: top;
+    }
+
+    .state-table td {
+      color: var(--text);
+      padding: 4px 0;
+    }
+
+    .state-table code {
+      font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .phase-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 12px;
+      text-transform: capitalize;
+    }
+
+    .phase-badge.execution  { background: #1c3a1c; color: #69db7c; border: 1px solid #2f9e44; }
+    .phase-badge.planning   { background: #1c2f4a; color: #74c0fc; border: 1px solid #1971c2; }
+    .phase-badge.review     { background: #3d2a0a; color: #ffd43b; border: 1px solid #e67700; }
+    .phase-badge.done       { background: #1e2a1e; color: #a9e34b; border: 1px solid #5c940d; }
+    .phase-badge.unknown,
+    .phase-badge             { background: var(--border); color: var(--text-dim); border: 1px solid var(--border); }
+
+    .wave { margin-bottom: 8px; }
+
+    .wave ul {
+      list-style: none;
+      padding-left: 8px;
+      margin: 0;
+    }
+
+    .task {
+      font-size: 12px;
+      padding: 2px 0;
+      color: var(--text);
+    }
+
+    .task.done  { color: var(--text-dim); text-decoration: line-through; }
+    .task.pending { color: var(--text); }
+
+    .state-section dl {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 4px 12px;
+      font-size: 13px;
+    }
+
+    .state-section dt {
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .state-section dd {
+      color: var(--text);
+      margin: 0;
+    }
+
+    .state-section dd code {
+      font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .blockers {
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin: 0;
+    }
+
+    .blockers.none        { background: #1c3a1c; color: #69db7c; border: 1px solid #2f9e44; }
+    .blockers.has-blocker { background: #3d1010; color: #ff6b6b; border: 1px solid #c92a2a; }
+
+    .worktree-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .worktree-list li {
+      font-size: 12px;
+      color: var(--text);
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .worktree-list code {
+      font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .worktree-list small {
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+
+    .worktree-list a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .worktree-list a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
