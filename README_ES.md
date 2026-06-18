@@ -617,3 +617,41 @@ No se pierde nada. El estado está en disco y en los comentarios del issue. `/fe
 ## Licencia
 
 Licencia MIT. Ver [LICENSE](LICENSE) para más detalles.
+
+---
+
+## Orquesta Studio
+
+Un dashboard web local sin base de datos para proyectos Orquesta. Proporciona un visor de documentación, un tablero kanban respaldado por GitHub y un inspector del estado del pipeline — sin introducir ningún almacén de datos nuevo.
+
+### Instalación
+
+```bash
+cd tu-proyecto
+pip install -r tools/dashboard/requirements.txt
+```
+
+### Ejecución
+
+```bash
+bash tools/dashboard/run.sh           # puerto por defecto 8765
+bash tools/dashboard/run.sh --port 9000
+bash tools/dashboard/run.sh --read-only   # deshabilita todos los endpoints de escritura
+```
+
+Abre [http://localhost:8765](http://localhost:8765).
+
+### Pestañas
+
+| Pestaña | Qué muestra | ¿Escribe? |
+|---------|-------------|-----------|
+| **Docs** | `docs/` y `.claude/memory/` renderizados como HTML con diagramas Mermaid | No |
+| **Backlog** | Issues de GitHub como tablero kanban (Backlog / Ready / In Progress / Done) | Sí — vía CLI `gh` |
+| **State** | Fase del pipeline actual, tareas activas, worktrees | No |
+
+### Cómo funciona
+
+- **Sin base de datos.** Las columnas del kanban se derivan en tiempo real del estado de los issues de GitHub y las ramas locales. No se almacena nada localmente.
+- **Usa tu `gh auth`.** Crear o mover tareas queda atribuido a tu cuenta de GitHub — igual que ejecutar `gh issue create` manualmente.
+- **Uso en equipo.** Cada miembro del equipo ejecuta su propia instancia. El estado compartido vive en GitHub.
+- **Modo solo lectura.** Usa `--read-only` para deshabilitar todas las escrituras (ideal para pantallas de visualización o instancias compartidas).

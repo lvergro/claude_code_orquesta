@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orquesta Studio</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #1a1b1e;
+      --surface: #25262b;
+      --border: #373a40;
+      --text: #c1c2c5;
+      --text-dim: #868e96;
+      --accent: #4dabf7;
+      --accent-hover: #74c0fc;
+      --tab-active-bg: #2c2e33;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      height: 52px;
+    }
+
+    header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+
+    nav {
+      display: flex;
+      gap: 4px;
+    }
+
+    nav a {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 6px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      border: 1px solid transparent;
+    }
+
+    nav a:hover {
+      background: var(--tab-active-bg);
+      color: var(--text);
+    }
+
+    nav a.active {
+      background: var(--tab-active-bg);
+      color: var(--accent);
+      border-color: var(--border);
+    }
+
+    main {
+      padding: 28px 32px;
+      max-width: 1200px;
+    }
+
+    #doc-tree details { margin: 2px 0; }
+    #doc-tree summary {
+      cursor: pointer;
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-size: 12px;
+      list-style: none;
+      user-select: none;
+    }
+    #doc-tree summary:hover { background: var(--tab-active-bg); color: var(--text); }
+    #doc-tree ul { list-style: none; padding-left: 14px; margin: 0; }
+    #doc-tree li { margin: 1px 0; }
+    .doc-link {
+      display: block;
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .doc-link:hover { background: var(--tab-active-bg); color: var(--accent-hover); }
+    .doc-link.non-md { color: var(--text-dim); cursor: default; }
+    .doc-link.non-md:hover { background: none; color: var(--text-dim); }
+
+    #content {
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+
+    #content h1, #content h2, #content h3 {
+      color: var(--text);
+      font-weight: 600;
+      margin: 20px 0 10px;
+    }
+
+    #content h1 { font-size: 20px; }
+    #content h2 { font-size: 16px; }
+    #content h3 { font-size: 14px; }
+
+    #content p { margin-bottom: 10px; }
+
+    #content a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    #content a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    #content pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+
+    #content code {
+      font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+      font-size: 12px;
+    }
+
+    #content ul, #content ol {
+      padding-left: 20px;
+      margin-bottom: 10px;
+    }
+
+    .htmx-indicator {
+      opacity: 0;
+      transition: opacity 0.2s;
+      color: var(--text-dim);
+      font-size: 12px;
+      margin-left: 8px;
+    }
+
+    .htmx-request .htmx-indicator {
+      opacity: 1;
+    }
+
+    /* Kanban board */
+    .kanban-board {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      overflow-x: auto;
+    }
+
+    .kanban-col {
+      flex: 1;
+      min-width: 220px;
+      background: #1e1e2e;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .kanban-col h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+
+    .col-count {
+      background: var(--border);
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-left: 4px;
+    }
+
+    .card {
+      background: #2a2a3e;
+      border-radius: 6px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .card-num {
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+
+    .card-labels {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .label-chip {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: var(--border);
+      color: var(--text-dim);
+    }
+
+    .card-title {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action, .copy-btn {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      cursor: pointer;
+    }
+
+    .btn-action:hover, .copy-btn:hover {
+      background: var(--tab-active-bg);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      border-color: #c92a2a;
+      color: #ff6b6b;
+    }
+
+    .btn-danger:hover {
+      background: #2d1010;
+    }
+
+    .create-form {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 0.75rem;
+    }
+
+    .create-form input,
+    .create-form textarea,
+    .create-form select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 12px;
+      padding: 4px 8px;
+    }
+
+    .create-form textarea {
+      resize: vertical;
+      min-height: 48px;
+    }
+
+    .create-form button {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .create-form button:hover {
+      background: var(--accent);
+      color: #000;
+    }
+
+    /* State tab */
+    .state-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 860px;
+    }
+
+    .state-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+
+    .state-section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .state-section h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 10px 0 4px;
+    }
+
+    .state-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 13px;
+    }
+
+    .state-table th {
+      text-align: left;
+      color: var(--text-dim);
+      font-weight: 500;
+      width: 110px;
+      padding: 4px 8px 4px 0;
+      vertical-align: top;
+    }
+
+    .state-table td {
+      color: var(--text);
+      padding: 4px 0;
+    }
+
+    .state-table code {
+      font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .phase-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 12px;
+      text-transform: capitalize;
+    }
+
+    .phase-badge.execution  { background: #1c3a1c; color: #69db7c; border: 1px solid #2f9e44; }
+    .phase-badge.planning   { background: #1c2f4a; color: #74c0fc; border: 1px solid #1971c2; }
+    .phase-badge.review     { background: #3d2a0a; color: #ffd43b; border: 1px solid #e67700; }
+    .phase-badge.done       { background: #1e2a1e; color: #a9e34b; border: 1px solid #5c940d; }
+    .phase-badge.unknown,
+    .phase-badge             { background: var(--border); color: var(--text-dim); border: 1px solid var(--border); }
+
+    .wave { margin-bottom: 8px; }
+
+    .wave ul {
+      list-style: none;
+      padding-left: 8px;
+      margin: 0;
+    }
+
+    .task {
+      font-size: 12px;
+      padding: 2px 0;
+      color: var(--text);
+    }
+
+    .task.done  { color: var(--text-dim); text-decoration: line-through; }
+    .task.pending { color: var(--text); }
+
+    .state-section dl {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 4px 12px;
+      font-size: 13px;
+    }
+
+    .state-section dt {
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .state-section dd {
+      color: var(--text);
+      margin: 0;
+    }
+
+    .state-section dd code {
+      font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .blockers {
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin: 0;
+    }
+
+    .blockers.none        { background: #1c3a1c; color: #69db7c; border: 1px solid #2f9e44; }
+    .blockers.has-blocker { background: #3d1010; color: #ff6b6b; border: 1px solid #c92a2a; }
+
+    .worktree-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .worktree-list li {
+      font-size: 12px;
+      color: var(--text);
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .worktree-list code {
+      font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .worktree-list small {
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+
+    .worktree-list a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .worktree-list a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Orquesta Studio</h1>
+    <nav id="tabs">
+      <a
+        id="tab-docs"
+        class="active"
+        hx-get="/api/docs/tree"
+        hx-target="#content"
+        hx-push-url="/docs"
+        hx-trigger="load, click"
+        onclick="setActive('tab-docs')"
+      >Docs</a>
+      <a
+        id="tab-backlog"
+        hx-get="/api/backlog"
+        hx-target="#content"
+        hx-push-url="/backlog"
+        onclick="setActive('tab-backlog')"
+      >Backlog</a>
+      <a
+        id="tab-state"
+        hx-get="/api/state"
+        hx-target="#content"
+        hx-push-url="/state"
+        onclick="setActive('tab-state')"
+      >State</a>
+    </nav>
+    <span class="htmx-indicator">Loading...</span>
+  </header>
+
+  <main>
+    <div id="content">Loading...</div>
+  </main>
+
+  <script>
+    mermaid.initialize({ startOnLoad: false, theme: "dark" });
+
+    function setActive(id) {
+      document.querySelectorAll("nav a").forEach(function(a) {
+        a.classList.remove("active");
+      });
+      document.getElementById(id).classList.add("active");
+    }
+
+    document.body.addEventListener("htmx:afterSwap", function() {
+      mermaid.run();
+    });
+  </script>
+</body>
+</html>

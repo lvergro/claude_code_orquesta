@@ -4,3 +4,9 @@
 # Local artifacts
 worktree/
 .worktrees/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
